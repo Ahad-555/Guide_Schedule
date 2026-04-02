@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, coursesTable } from "@workspace/db";
-import { eq, ilike, or } from "drizzle-orm";
+import { eq, ilike, or, inArray, notInArray } from "drizzle-orm";
 import {
   ListCoursesQueryParams,
   CreateCourseBody,
@@ -102,9 +102,22 @@ router.post("/courses/bulk", async (req, res) => {
     res.status(400).json({ error: parse.error });
     return;
   }
-  await db.delete(coursesTable);
-  const inserted = await db.insert(coursesTable).values(
-    parse.data.courses.map((c) => ({
+
+  const incoming = parse.data.courses;
+  const withId = incoming.filter(c => c.id != null);
+  const withoutId = incoming.filter(c => c.id == null);
+  const keptIds = withId.map(c => c.id as number);
+
+  // 1. Delete courses that are no longer in the list
+  const existing = await db.select({ id: coursesTable.id }).from(coursesTable);
+  const toDelete = existing.map(e => e.id).filter(id => !keptIds.includes(id));
+  if (toDelete.length > 0) {
+    await db.delete(coursesTable).where(inArray(coursesTable.id, toDelete));
+  }
+
+  // 2. Update existing courses (preserve their IDs)
+  for (const c of withId) {
+    await db.update(coursesTable).set({
       name: c.name,
       instructor: c.instructor,
       college: c.college,
@@ -115,9 +128,30 @@ router.post("/courses/bulk", async (req, res) => {
       roomDescription: c.roomDescription ?? null,
       officeHours: c.officeHours ?? null,
       officeLocation: c.officeLocation ?? null,
-    }))
-  ).returning();
-  res.status(201).json({ count: inserted.length });
+    }).where(eq(coursesTable.id, c.id as number));
+  }
+
+  // 3. Insert new courses
+  let insertedCount = 0;
+  if (withoutId.length > 0) {
+    const inserted = await db.insert(coursesTable).values(
+      withoutId.map(c => ({
+        name: c.name,
+        instructor: c.instructor,
+        college: c.college,
+        day: c.day,
+        startTime: c.startTime,
+        endTime: c.endTime,
+        room: c.room,
+        roomDescription: c.roomDescription ?? null,
+        officeHours: c.officeHours ?? null,
+        officeLocation: c.officeLocation ?? null,
+      }))
+    ).returning();
+    insertedCount = inserted.length;
+  }
+
+  res.status(201).json({ count: withId.length + insertedCount });
 });
 
 router.get("/courses/:id", async (req, res) => {

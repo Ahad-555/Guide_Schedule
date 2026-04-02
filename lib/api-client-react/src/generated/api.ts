@@ -546,7 +546,7 @@ export const useDeleteCourse = <
 };
 
 /**
- * @summary Bulk create courses from admin table
+ * @summary Bulk upsert courses from admin table
  */
 export const getBulkCreateCoursesUrl = () => {
   return `/api/courses/bulk`;
@@ -609,7 +609,7 @@ export type BulkCreateCoursesMutationBody = BodyType<BulkCreateCoursesBody>;
 export type BulkCreateCoursesMutationError = ErrorType<unknown>;
 
 /**
- * @summary Bulk create courses from admin table
+ * @summary Bulk upsert courses from admin table
  */
 export const useBulkCreateCourses = <
   TError = ErrorType<unknown>,

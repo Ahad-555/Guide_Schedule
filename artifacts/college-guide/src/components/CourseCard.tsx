@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 interface CourseCardProps {
   course: Course;
   isScheduled?: boolean;
-  onAdd?: (course: Course) => void;
+  onAdd?: (id: number) => void;
   onRemove?: (id: number) => void;
 }
 
@@ -89,7 +89,7 @@ export function CourseCard({ course, isScheduled, onAdd, onRemove }: CourseCardP
           ) : (
             <button
               data-testid={`button-add-${course.id}`}
-              onClick={() => onAdd?.(course)}
+              onClick={() => onAdd?.(course.id)}
               className="flex items-center justify-center gap-1.5 py-3 text-sm font-medium text-white bg-primary hover:bg-primary/90 transition-colors"
             >
               <Plus className="w-4 h-4" />

@@ -5,8 +5,8 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { CreateCourseBody } from "./createCourseBody";
+import type { BulkCourseItem } from "./bulkCourseItem";
 
 export type BulkCreateCoursesBody = {
-  courses: CreateCourseBody[];
+  courses: BulkCourseItem[];
 };

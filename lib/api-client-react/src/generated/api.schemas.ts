@@ -36,6 +36,20 @@ export interface CreateCourseBody {
   officeLocation?: string;
 }
 
+export interface BulkCourseItem {
+  id?: number;
+  name: string;
+  instructor: string;
+  college: string;
+  day: string;
+  startTime: string;
+  endTime: string;
+  room: string;
+  roomDescription?: string;
+  officeHours?: string;
+  officeLocation?: string;
+}
+
 export type ListCoursesParams = {
   college?: string;
   day?: string;
@@ -43,7 +57,7 @@ export type ListCoursesParams = {
 };
 
 export type BulkCreateCoursesBody = {
-  courses: CreateCourseBody[];
+  courses: BulkCourseItem[];
 };
 
 export type BulkCreateCourses201 = {

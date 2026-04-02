@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useListCourses, useBulkCreateCourses, getListCoursesQueryKey } from "@workspace/api-client-react";
-import { Course, CreateCourseBody } from "@workspace/api-client-react/src/generated/api.schemas";
+import { Course, BulkCourseItem } from "@workspace/api-client-react/src/generated/api.schemas";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
@@ -64,7 +64,8 @@ export default function Admin() {
       });
     }
 
-    const payload: CreateCourseBody[] = validCourses.map(c => ({
+    const payload: BulkCourseItem[] = validCourses.map(c => ({
+      ...(c.id != null ? { id: c.id } : {}),
       name: c.name!,
       instructor: c.instructor!,
       college: c.college!,

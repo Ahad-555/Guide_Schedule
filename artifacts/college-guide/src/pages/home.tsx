@@ -18,7 +18,8 @@ export default function Home() {
   const [selectedCollege, setSelectedCollege] = useState("الكل");
 
   const { data: courses = [], isLoading } = useListCourses({}, { query: { queryKey: getListCoursesQueryKey({}) } });
-  const { schedule, addCourse, removeCourse } = useSchedule();
+  const { scheduledIds, addCourse, removeCourse } = useSchedule();
+  const schedule = useMemo(() => courses.filter(c => scheduledIds.includes(c.id)), [courses, scheduledIds]);
 
   const colleges = useMemo(() => {
     const unique = new Set(courses.map(c => c.college).filter(Boolean));
@@ -79,7 +80,7 @@ export default function Home() {
               استكشاف
             </TabsTrigger>
             <TabsTrigger value="schedule" className="rounded-md data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all">
-              جدولي ({schedule.length})
+              جدولي ({scheduledIds.length})
             </TabsTrigger>
           </TabsList>
 
@@ -161,7 +162,7 @@ export default function Home() {
                             >
                               <CourseCard 
                                 course={course} 
-                                isScheduled={schedule.some(c => c.id === course.id)}
+                                isScheduled={scheduledIds.includes(course.id)}
                                 onAdd={addCourse}
                                 onRemove={removeCourse}
                               />

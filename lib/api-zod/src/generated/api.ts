@@ -117,11 +117,12 @@ export const DeleteCourseParams = zod.object({
 });
 
 /**
- * @summary Bulk create courses from admin table
+ * @summary Bulk upsert courses from admin table
  */
 export const BulkCreateCoursesBody = zod.object({
   courses: zod.array(
     zod.object({
+      id: zod.number().optional(),
       name: zod.string(),
       instructor: zod.string(),
       college: zod.string(),

@@ -131,7 +131,7 @@ paths:
     post:
       operationId: bulkCreateCourses
       tags: [courses]
-      summary: Bulk create courses from admin table
+      summary: Bulk upsert courses from admin table
       requestBody:
         required: true
         content:
@@ -142,12 +142,12 @@ paths:
                 courses:
                   type: array
                   items:
-                    $ref: "#/components/schemas/CreateCourseBody"
+                    $ref: "#/components/schemas/BulkCourseItem"
               required:
                 - courses
       responses:
         "201":
-          description: Created courses count
+          description: Sync result
           content:
             application/json:
               schema:
@@ -206,6 +206,40 @@ components:
     CreateCourseBody:
       type: object
       properties:
+        name:
+          type: string
+        instructor:
+          type: string
+        college:
+          type: string
+        day:
+          type: string
+        startTime:
+          type: string
+        endTime:
+          type: string
+        room:
+          type: string
+        roomDescription:
+          type: string
+        officeHours:
+          type: string
+        officeLocation:
+          type: string
+      required:
+        - name
+        - instructor
+        - college
+        - day
+        - startTime
+        - endTime
+        - room
+
+    BulkCourseItem:
+      type: object
+      properties:
+        id:
+          type: integer
         name:
           type: string
         instructor:
