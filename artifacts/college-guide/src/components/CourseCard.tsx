@@ -99,7 +99,7 @@ export function CourseCard({ course, isScheduled, onAdd, onRemove }: CourseCardP
         </div>
       </div>
 
-      {/* Slide-up drawer overlay */}
+      {/* Slide-up drawer */}
       <AnimatePresence>
         {openDrawer !== null && (
           <>
@@ -109,105 +109,118 @@ export function CourseCard({ course, isScheduled, onAdd, onRemove }: CourseCardP
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 bg-black/40 z-40"
+              transition={{ duration: 0.18 }}
+              className="fixed inset-0 bg-black/50 z-40"
               onClick={closeDrawer}
             />
 
-            {/* Drawer */}
+            {/* Sheet — full-width on mobile, capped on wider screens */}
             <motion.div
               key="drawer"
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl max-w-lg mx-auto"
+              transition={{ type: "spring", stiffness: 320, damping: 32 }}
+              className="fixed bottom-0 inset-x-0 z-50 flex justify-center items-end pointer-events-none"
               dir="rtl"
             >
-              {/* Handle bar */}
-              <div className="flex justify-center pt-3 pb-1">
-                <div className="w-10 h-1 rounded-full bg-border" />
-              </div>
-
-              {/* Header */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-border/50">
-                <div className="flex items-center gap-2">
-                  {openDrawer === "room" ? (
-                    <MapPin className="w-5 h-5 text-primary" />
-                  ) : (
-                    <BookOpen className="w-5 h-5 text-primary" />
-                  )}
-                  <span className="font-bold text-base text-foreground">
-                    {openDrawer === "room" ? "معلومات القاعة" : "معلومات المكتب"}
-                  </span>
+              <div
+                className="
+                  pointer-events-auto
+                  w-full
+                  sm:max-w-sm
+                  bg-white
+                  rounded-t-3xl
+                  shadow-2xl
+                  flex flex-col
+                  max-h-[60vh]
+                "
+              >
+                {/* Handle */}
+                <div className="flex justify-center pt-3 pb-1 shrink-0">
+                  <div className="w-10 h-1.5 rounded-full bg-muted" />
                 </div>
-                <button
-                  onClick={closeDrawer}
-                  className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-muted/80 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
 
-              {/* Course name pill */}
-              <div className="px-5 pt-4">
-                <p className="text-xs text-muted-foreground mb-1">المادة</p>
-                <p className="font-semibold text-foreground">{course.name}</p>
-              </div>
+                {/* Header */}
+                <div className="flex items-center justify-between px-5 py-3 border-b border-border/40 shrink-0">
+                  <div className="flex items-center gap-2">
+                    {openDrawer === "room"
+                      ? <MapPin className="w-5 h-5 text-primary" />
+                      : <BookOpen className="w-5 h-5 text-primary" />
+                    }
+                    <span className="font-bold text-base">
+                      {openDrawer === "room" ? "معلومات القاعة" : "معلومات المكتب"}
+                    </span>
+                  </div>
+                  <button
+                    onClick={closeDrawer}
+                    className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-muted/70 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
 
-              {/* Content */}
-              <div className="px-5 py-5 space-y-4">
-                {openDrawer === "room" ? (
-                  <>
-                    {course.roomDescription ? (
-                      <div className="bg-primary/5 rounded-xl p-4 flex items-start gap-3">
-                        <div className="bg-primary/15 rounded-lg p-2 mt-0.5 shrink-0">
+                {/* Scrollable body */}
+                <div className="overflow-y-auto flex-1 px-5 py-4 space-y-3">
+                  {/* Course label */}
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5 font-medium">
+                      {course.name}
+                    </span>
+                  </div>
+
+                  {openDrawer === "room" ? (
+                    course.roomDescription ? (
+                      <div className="bg-primary/5 rounded-2xl p-4 flex items-start gap-3">
+                        <div className="bg-primary/15 rounded-xl p-2 shrink-0 mt-0.5">
                           <MapPin className="w-5 h-5 text-primary" />
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground mb-1">وصف القاعة</p>
-                          <p className="text-foreground leading-relaxed">{course.roomDescription}</p>
+                          <p className="text-foreground leading-relaxed text-sm">{course.roomDescription}</p>
                         </div>
                       </div>
                     ) : (
-                      <p className="text-center text-muted-foreground text-sm py-4">لم يُضَف وصف للقاعة بعد</p>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    {course.officeLocation ? (
-                      <div className="bg-primary/5 rounded-xl p-4 flex items-start gap-3">
-                        <div className="bg-primary/15 rounded-lg p-2 mt-0.5">
-                          <MapPin className="w-5 h-5 text-primary" />
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground mb-1">موقع المكتب</p>
-                          <p className="font-bold text-primary">{course.officeLocation}</p>
-                        </div>
+                      <div className="text-center py-6 text-muted-foreground text-sm">
+                        لم يُضَف وصف للقاعة بعد
                       </div>
-                    ) : null}
-
-                    {course.officeHours ? (
-                      <div className="bg-primary/5 rounded-xl p-4 flex items-start gap-3">
-                        <div className="bg-primary/15 rounded-lg p-2 mt-0.5">
-                          <Clock className="w-5 h-5 text-primary" />
+                    )
+                  ) : (
+                    <>
+                      {course.officeLocation && (
+                        <div className="bg-primary/5 rounded-2xl p-4 flex items-start gap-3">
+                          <div className="bg-primary/15 rounded-xl p-2 shrink-0 mt-0.5">
+                            <MapPin className="w-5 h-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">موقع المكتب</p>
+                            <p className="font-semibold text-primary text-sm">{course.officeLocation}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground mb-1">ساعات المكتب</p>
-                          <p className="font-bold text-primary">{course.officeHours}</p>
+                      )}
+                      {course.officeHours && (
+                        <div className="bg-primary/5 rounded-2xl p-4 flex items-start gap-3">
+                          <div className="bg-primary/15 rounded-xl p-2 shrink-0 mt-0.5">
+                            <Clock className="w-5 h-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">ساعات المكتب</p>
+                            <p className="font-semibold text-primary text-sm">{course.officeHours}</p>
+                          </div>
                         </div>
-                      </div>
-                    ) : null}
+                      )}
+                      {!course.officeLocation && !course.officeHours && (
+                        <div className="text-center py-6 text-muted-foreground text-sm">
+                          لا تتوفر معلومات المكتب
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
 
-                    {!course.officeLocation && !course.officeHours && (
-                      <p className="text-center text-muted-foreground text-sm py-4">لا تتوفر معلومات المكتب</p>
-                    )}
-                  </>
-                )}
+                {/* iOS safe area */}
+                <div className="shrink-0 pb-safe pb-6" />
               </div>
-
-              {/* Bottom safe area */}
-              <div className="pb-8" />
             </motion.div>
           </>
         )}
