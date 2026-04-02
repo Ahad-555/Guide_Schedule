@@ -5,18 +5,28 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  BulkCreateCourses201,
+  BulkCreateCoursesBody,
+  Course,
+  CreateCourseBody,
+  HealthStatus,
+  ListCoursesParams,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
-import type { ErrorType } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -25,7 +35,6 @@ type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const getHealthCheckUrl = () => {
@@ -99,3 +108,525 @@ export function useHealthCheck<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary List all courses
+ */
+export const getListCoursesUrl = (params?: ListCoursesParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/courses?${stringifiedParams}`
+    : `/api/courses`;
+};
+
+export const listCourses = async (
+  params?: ListCoursesParams,
+  options?: RequestInit,
+): Promise<Course[]> => {
+  return customFetch<Course[]>(getListCoursesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListCoursesQueryKey = (params?: ListCoursesParams) => {
+  return [`/api/courses`, ...(params ? [params] : [])] as const;
+};
+
+export const getListCoursesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listCourses>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListCoursesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listCourses>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListCoursesQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listCourses>>> = ({
+    signal,
+  }) => listCourses(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listCourses>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListCoursesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listCourses>>
+>;
+export type ListCoursesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all courses
+ */
+
+export function useListCourses<
+  TData = Awaited<ReturnType<typeof listCourses>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListCoursesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listCourses>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListCoursesQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a course
+ */
+export const getCreateCourseUrl = () => {
+  return `/api/courses`;
+};
+
+export const createCourse = async (
+  createCourseBody: CreateCourseBody,
+  options?: RequestInit,
+): Promise<Course> => {
+  return customFetch<Course>(getCreateCourseUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createCourseBody),
+  });
+};
+
+export const getCreateCourseMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createCourse>>,
+    TError,
+    { data: BodyType<CreateCourseBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createCourse>>,
+  TError,
+  { data: BodyType<CreateCourseBody> },
+  TContext
+> => {
+  const mutationKey = ["createCourse"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createCourse>>,
+    { data: BodyType<CreateCourseBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createCourse(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateCourseMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createCourse>>
+>;
+export type CreateCourseMutationBody = BodyType<CreateCourseBody>;
+export type CreateCourseMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a course
+ */
+export const useCreateCourse = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createCourse>>,
+    TError,
+    { data: BodyType<CreateCourseBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createCourse>>,
+  TError,
+  { data: BodyType<CreateCourseBody> },
+  TContext
+> => {
+  return useMutation(getCreateCourseMutationOptions(options));
+};
+
+/**
+ * @summary Get a course
+ */
+export const getGetCourseUrl = (id: number) => {
+  return `/api/courses/${id}`;
+};
+
+export const getCourse = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Course> => {
+  return customFetch<Course>(getGetCourseUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCourseQueryKey = (id: number) => {
+  return [`/api/courses/${id}`] as const;
+};
+
+export const getGetCourseQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCourse>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCourse>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetCourseQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCourse>>> = ({
+    signal,
+  }) => getCourse(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getCourse>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetCourseQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCourse>>
+>;
+export type GetCourseQueryError = ErrorType<void>;
+
+/**
+ * @summary Get a course
+ */
+
+export function useGetCourse<
+  TData = Awaited<ReturnType<typeof getCourse>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCourse>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCourseQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update a course
+ */
+export const getUpdateCourseUrl = (id: number) => {
+  return `/api/courses/${id}`;
+};
+
+export const updateCourse = async (
+  id: number,
+  createCourseBody: CreateCourseBody,
+  options?: RequestInit,
+): Promise<Course> => {
+  return customFetch<Course>(getUpdateCourseUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createCourseBody),
+  });
+};
+
+export const getUpdateCourseMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateCourse>>,
+    TError,
+    { id: number; data: BodyType<CreateCourseBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateCourse>>,
+  TError,
+  { id: number; data: BodyType<CreateCourseBody> },
+  TContext
+> => {
+  const mutationKey = ["updateCourse"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateCourse>>,
+    { id: number; data: BodyType<CreateCourseBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateCourse(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateCourseMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateCourse>>
+>;
+export type UpdateCourseMutationBody = BodyType<CreateCourseBody>;
+export type UpdateCourseMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update a course
+ */
+export const useUpdateCourse = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateCourse>>,
+    TError,
+    { id: number; data: BodyType<CreateCourseBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateCourse>>,
+  TError,
+  { id: number; data: BodyType<CreateCourseBody> },
+  TContext
+> => {
+  return useMutation(getUpdateCourseMutationOptions(options));
+};
+
+/**
+ * @summary Delete a course
+ */
+export const getDeleteCourseUrl = (id: number) => {
+  return `/api/courses/${id}`;
+};
+
+export const deleteCourse = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteCourseUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteCourseMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteCourse>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteCourse>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteCourse"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteCourse>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteCourse(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteCourseMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteCourse>>
+>;
+
+export type DeleteCourseMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a course
+ */
+export const useDeleteCourse = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteCourse>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteCourse>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteCourseMutationOptions(options));
+};
+
+/**
+ * @summary Bulk create courses from admin table
+ */
+export const getBulkCreateCoursesUrl = () => {
+  return `/api/courses/bulk`;
+};
+
+export const bulkCreateCourses = async (
+  bulkCreateCoursesBody: BulkCreateCoursesBody,
+  options?: RequestInit,
+): Promise<BulkCreateCourses201> => {
+  return customFetch<BulkCreateCourses201>(getBulkCreateCoursesUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(bulkCreateCoursesBody),
+  });
+};
+
+export const getBulkCreateCoursesMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof bulkCreateCourses>>,
+    TError,
+    { data: BodyType<BulkCreateCoursesBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof bulkCreateCourses>>,
+  TError,
+  { data: BodyType<BulkCreateCoursesBody> },
+  TContext
+> => {
+  const mutationKey = ["bulkCreateCourses"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof bulkCreateCourses>>,
+    { data: BodyType<BulkCreateCoursesBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return bulkCreateCourses(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type BulkCreateCoursesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof bulkCreateCourses>>
+>;
+export type BulkCreateCoursesMutationBody = BodyType<BulkCreateCoursesBody>;
+export type BulkCreateCoursesMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Bulk create courses from admin table
+ */
+export const useBulkCreateCourses = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof bulkCreateCourses>>,
+    TError,
+    { data: BodyType<BulkCreateCoursesBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof bulkCreateCourses>>,
+  TError,
+  { data: BodyType<BulkCreateCoursesBody> },
+  TContext
+> => {
+  return useMutation(getBulkCreateCoursesMutationOptions(options));
+};

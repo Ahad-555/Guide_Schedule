@@ -6,4 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./bulkCreateCourses201";
+export * from "./bulkCreateCoursesBody";
+export * from "./course";
+export * from "./createCourseBody";
 export * from "./healthStatus";
+export * from "./listCoursesParams";

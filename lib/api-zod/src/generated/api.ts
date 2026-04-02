@@ -8,9 +8,124 @@
 import * as zod from "zod";
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
+});
+
+/**
+ * @summary List all courses
+ */
+export const ListCoursesQueryParams = zod.object({
+  college: zod.coerce.string().optional(),
+  day: zod.coerce.string().optional(),
+  search: zod.coerce.string().optional(),
+});
+
+export const ListCoursesResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  instructor: zod.string(),
+  college: zod.string(),
+  day: zod.string(),
+  startTime: zod.string(),
+  endTime: zod.string(),
+  room: zod.string(),
+  officeHours: zod.string().optional(),
+  officeLocation: zod.string().optional(),
+});
+export const ListCoursesResponse = zod.array(ListCoursesResponseItem);
+
+/**
+ * @summary Create a course
+ */
+export const CreateCourseBody = zod.object({
+  name: zod.string(),
+  instructor: zod.string(),
+  college: zod.string(),
+  day: zod.string(),
+  startTime: zod.string(),
+  endTime: zod.string(),
+  room: zod.string(),
+  officeHours: zod.string().optional(),
+  officeLocation: zod.string().optional(),
+});
+
+/**
+ * @summary Get a course
+ */
+export const GetCourseParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetCourseResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  instructor: zod.string(),
+  college: zod.string(),
+  day: zod.string(),
+  startTime: zod.string(),
+  endTime: zod.string(),
+  room: zod.string(),
+  officeHours: zod.string().optional(),
+  officeLocation: zod.string().optional(),
+});
+
+/**
+ * @summary Update a course
+ */
+export const UpdateCourseParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateCourseBody = zod.object({
+  name: zod.string(),
+  instructor: zod.string(),
+  college: zod.string(),
+  day: zod.string(),
+  startTime: zod.string(),
+  endTime: zod.string(),
+  room: zod.string(),
+  officeHours: zod.string().optional(),
+  officeLocation: zod.string().optional(),
+});
+
+export const UpdateCourseResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  instructor: zod.string(),
+  college: zod.string(),
+  day: zod.string(),
+  startTime: zod.string(),
+  endTime: zod.string(),
+  room: zod.string(),
+  officeHours: zod.string().optional(),
+  officeLocation: zod.string().optional(),
+});
+
+/**
+ * @summary Delete a course
+ */
+export const DeleteCourseParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Bulk create courses from admin table
+ */
+export const BulkCreateCoursesBody = zod.object({
+  courses: zod.array(
+    zod.object({
+      name: zod.string(),
+      instructor: zod.string(),
+      college: zod.string(),
+      day: zod.string(),
+      startTime: zod.string(),
+      endTime: zod.string(),
+      room: zod.string(),
+      officeHours: zod.string().optional(),
+      officeLocation: zod.string().optional(),
+    }),
+  ),
 });

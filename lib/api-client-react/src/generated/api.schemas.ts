@@ -8,3 +8,42 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface Course {
+  id: number;
+  name: string;
+  instructor: string;
+  college: string;
+  day: string;
+  startTime: string;
+  endTime: string;
+  room: string;
+  officeHours?: string;
+  officeLocation?: string;
+}
+
+export interface CreateCourseBody {
+  name: string;
+  instructor: string;
+  college: string;
+  day: string;
+  startTime: string;
+  endTime: string;
+  room: string;
+  officeHours?: string;
+  officeLocation?: string;
+}
+
+export type ListCoursesParams = {
+  college?: string;
+  day?: string;
+  search?: string;
+};
+
+export type BulkCreateCoursesBody = {
+  courses: CreateCourseBody[];
+};
+
+export type BulkCreateCourses201 = {
+  count: number;
+};
