@@ -35,9 +35,10 @@ export default function Admin() {
         startTime: "",
         endTime: "",
         room: "",
+        roomDescription: "",
         officeHours: "",
         officeLocation: ""
-      }
+      } as any
     ]);
   };
 
@@ -71,6 +72,7 @@ export default function Admin() {
       startTime: c.startTime!,
       endTime: c.endTime!,
       room: c.room!,
+      roomDescription: (c as any).roomDescription || undefined,
       officeHours: c.officeHours,
       officeLocation: c.officeLocation
     }));
@@ -127,6 +129,7 @@ export default function Admin() {
                     <th className="px-4 py-3 font-medium whitespace-nowrap min-w-[100px]">وقت البداية</th>
                     <th className="px-4 py-3 font-medium whitespace-nowrap min-w-[100px]">وقت النهاية</th>
                     <th className="px-4 py-3 font-medium whitespace-nowrap min-w-[100px]">القاعة</th>
+                    <th className="px-4 py-3 font-medium whitespace-nowrap min-w-[180px]">وصف القاعة</th>
                     <th className="px-4 py-3 font-medium whitespace-nowrap min-w-[120px]">ساعات المكتب</th>
                     <th className="px-4 py-3 font-medium whitespace-nowrap min-w-[120px]">موقع المكتب</th>
                     <th className="px-4 py-3 font-medium w-[60px]"></th>
@@ -199,6 +202,14 @@ export default function Admin() {
                             value={course.room || ""} 
                             onChange={(e) => updateRow(index, "room", e.target.value)} 
                             className="h-8 min-w-[100px] bg-transparent"
+                          />
+                        </td>
+                        <td className="px-2 py-2">
+                          <Input 
+                            value={(course as any).roomDescription || ""} 
+                            onChange={(e) => updateRow(index, "roomDescription" as any, e.target.value)} 
+                            placeholder="وصف موقع القاعة..."
+                            className="h-8 min-w-[180px] bg-transparent"
                           />
                         </td>
                         <td className="px-2 py-2">

@@ -41,10 +41,16 @@ export function CourseCard({ course, isScheduled, onAdd, onRemove }: CourseCardP
             </Badge>
           </div>
 
-          {/* Time row */}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-            <Clock className="w-4 h-4 shrink-0" />
-            <span>{course.startTime} - {course.endTime}</span>
+          {/* Time + room row */}
+          <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4 flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-4 h-4 shrink-0" />
+              <span>{course.startTime} - {course.endTime}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <MapPin className="w-4 h-4 shrink-0" />
+              <span>{course.room}</span>
+            </div>
           </div>
         </div>
 
@@ -153,17 +159,18 @@ export function CourseCard({ course, isScheduled, onAdd, onRemove }: CourseCardP
               <div className="px-5 py-5 space-y-4">
                 {openDrawer === "room" ? (
                   <>
-                    <div className="bg-primary/5 rounded-xl p-4 flex items-start gap-3">
-                      <div className="bg-primary/15 rounded-lg p-2 mt-0.5">
-                        <MapPin className="w-5 h-5 text-primary" />
+                    {course.roomDescription ? (
+                      <div className="bg-primary/5 rounded-xl p-4 flex items-start gap-3">
+                        <div className="bg-primary/15 rounded-lg p-2 mt-0.5 shrink-0">
+                          <MapPin className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">وصف القاعة</p>
+                          <p className="text-foreground leading-relaxed">{course.roomDescription}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">رقم القاعة</p>
-                        <p className="font-bold text-lg text-primary">{course.room}</p>
-                      </div>
-                    </div>
-                    {!course.room && (
-                      <p className="text-center text-muted-foreground text-sm py-4">لا تتوفر معلومات القاعة</p>
+                    ) : (
+                      <p className="text-center text-muted-foreground text-sm py-4">لم يُضَف وصف للقاعة بعد</p>
                     )}
                   </>
                 ) : (

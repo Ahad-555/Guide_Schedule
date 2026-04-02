@@ -11,6 +11,7 @@ export const coursesTable = pgTable("courses", {
   startTime: text("start_time").notNull(),
   endTime: text("end_time").notNull(),
   room: text("room").notNull(),
+  roomDescription: text("room_description"),
   officeHours: text("office_hours"),
   officeLocation: text("office_location"),
 });

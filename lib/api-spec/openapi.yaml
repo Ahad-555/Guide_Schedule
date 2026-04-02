@@ -187,6 +187,8 @@ components:
           type: string
         room:
           type: string
+        roomDescription:
+          type: string
         officeHours:
           type: string
         officeLocation:
@@ -217,6 +219,8 @@ components:
         endTime:
           type: string
         room:
+          type: string
+        roomDescription:
           type: string
         officeHours:
           type: string

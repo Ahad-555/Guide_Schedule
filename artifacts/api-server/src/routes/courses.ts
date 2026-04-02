@@ -52,6 +52,7 @@ router.get("/courses", async (req, res) => {
     startTime: c.startTime,
     endTime: c.endTime,
     room: c.room,
+    roomDescription: c.roomDescription ?? undefined,
     officeHours: c.officeHours ?? undefined,
     officeLocation: c.officeLocation ?? undefined,
   })));
@@ -72,6 +73,7 @@ router.post("/courses", async (req, res) => {
     startTime: data.startTime,
     endTime: data.endTime,
     room: data.room,
+    roomDescription: data.roomDescription ?? null,
     officeHours: data.officeHours ?? null,
     officeLocation: data.officeLocation ?? null,
   }).returning();
@@ -84,6 +86,7 @@ router.post("/courses", async (req, res) => {
     startTime: course.startTime,
     endTime: course.endTime,
     room: course.room,
+    roomDescription: course.roomDescription ?? undefined,
     officeHours: course.officeHours ?? undefined,
     officeLocation: course.officeLocation ?? undefined,
   });
@@ -109,6 +112,7 @@ router.post("/courses/bulk", async (req, res) => {
       startTime: c.startTime,
       endTime: c.endTime,
       room: c.room,
+      roomDescription: c.roomDescription ?? null,
       officeHours: c.officeHours ?? null,
       officeLocation: c.officeLocation ?? null,
     }))
@@ -136,6 +140,7 @@ router.get("/courses/:id", async (req, res) => {
     startTime: course.startTime,
     endTime: course.endTime,
     room: course.room,
+    roomDescription: course.roomDescription ?? undefined,
     officeHours: course.officeHours ?? undefined,
     officeLocation: course.officeLocation ?? undefined,
   });
@@ -157,6 +162,7 @@ router.put("/courses/:id", async (req, res) => {
     startTime: data.startTime,
     endTime: data.endTime,
     room: data.room,
+    roomDescription: data.roomDescription ?? null,
     officeHours: data.officeHours ?? null,
     officeLocation: data.officeLocation ?? null,
   }).where(eq(coursesTable.id, paramParse.data.id)).returning();
@@ -173,6 +179,7 @@ router.put("/courses/:id", async (req, res) => {
     startTime: updated.startTime,
     endTime: updated.endTime,
     room: updated.room,
+    roomDescription: updated.roomDescription ?? undefined,
     officeHours: updated.officeHours ?? undefined,
     officeLocation: updated.officeLocation ?? undefined,
   });
