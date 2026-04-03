@@ -54,7 +54,7 @@ export function AdminGuard({ children }: AdminGuardProps) {
           </div>
           <div className="text-center">
             <h1 className="text-white font-bold text-xl">لوحة التحكم</h1>
-            <p className="text-white/70 text-sm mt-1">دليل كليتي التفاعلي</p>
+            <p className="text-white/70 text-sm mt-1">خاصة بالمشرفة عهد الشمري | MIS</p>
           </div>
         </div>
 
