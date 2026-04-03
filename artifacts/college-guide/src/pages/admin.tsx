@@ -10,6 +10,8 @@ import { Plus, Trash2, Save, CloudOff, CheckCircle2, RotateCcw } from "lucide-re
 import { Link } from "wouter";
 
 const DRAFT_KEY = "admin-courses-draft";
+const COLLEGES = ["الكل", "تطبيقيه", "حاسبات", "عربي", "صيدلة", "القاعات الزجاجيه"];
+const COLLEGE_OPTIONS = COLLEGES.filter(c => c !== "الكل");
 
 type LocalCourse = Partial<Course & { _tempId: string; roomDescription?: string }>;
 
@@ -41,9 +43,9 @@ export default function Admin() {
   const [localCourses, setLocalCourses] = useState<LocalCourse[]>([]);
   const [hasDraft, setHasDraft] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null);
+  const [activeCollege, setActiveCollege] = useState("الكل");
   const initializedRef = useRef(false);
 
-  // Initialize: draft first, then server data
   useEffect(() => {
     if (initializedRef.current) return;
     const draft = loadDraft();
@@ -65,7 +67,6 @@ export default function Admin() {
     }
   }, [isLoading, courses]);
 
-  // Auto-save draft on every change
   useEffect(() => {
     if (!initializedRef.current) return;
     saveDraft(localCourses);
@@ -88,7 +89,7 @@ export default function Admin() {
         _tempId: Math.random().toString(36).substring(7),
         name: "",
         instructor: "",
-        college: "",
+        college: activeCollege !== "الكل" ? activeCollege : "",
         day: "الأحد",
         startTime: "",
         endTime: "",
@@ -152,6 +153,17 @@ export default function Admin() {
   const formatTime = (d: Date) =>
     d.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" });
 
+  const visibleCourses = activeCollege === "الكل"
+    ? localCourses
+    : localCourses.filter(c => c.college === activeCollege);
+
+  const visibleIndices = activeCollege === "الكل"
+    ? localCourses.map((_, i) => i)
+    : localCourses.map((c, i) => c.college === activeCollege ? i : -1).filter(i => i !== -1);
+
+  const collegeCount = (col: string) =>
+    col === "الكل" ? localCourses.length : localCourses.filter(c => c.college === col).length;
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
@@ -182,20 +194,17 @@ export default function Admin() {
             </div>
           </div>
 
-          {/* Draft indicator banner */}
+          {/* Draft indicator */}
           {hasDraft && (
             <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
               <CloudOff className="w-4 h-4 shrink-0" />
               <span>
                 لديكِ تغييرات غير محفوظة للطالبات
-                {draftSavedAt && (
-                  <span className="text-amber-600 mr-1">— آخر حفظ مؤقت {formatTime(draftSavedAt)}</span>
-                )}
+                {draftSavedAt && <span className="text-amber-600 mr-1">— آخر حفظ مؤقت {formatTime(draftSavedAt)}</span>}
               </span>
               <span className="mr-auto text-amber-600 text-xs">اضغطي "حفظ الكل" لنشرها</span>
             </div>
           )}
-
           {!hasDraft && localCourses.length > 0 && (
             <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -203,8 +212,45 @@ export default function Admin() {
             </div>
           )}
 
+          {/* College filter tabs */}
+          <div className="flex gap-2 flex-wrap">
+            {COLLEGES.map(col => {
+              const count = collegeCount(col);
+              const isGlass = col === "القاعات الزجاجيه";
+              const isActive = activeCollege === col;
+              return (
+                <button
+                  key={col}
+                  onClick={() => setActiveCollege(col)}
+                  className={`
+                    flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border transition-all
+                    ${isActive
+                      ? isGlass
+                        ? "bg-teal-600 text-white border-teal-600 shadow-sm"
+                        : "bg-primary text-white border-primary shadow-sm"
+                      : isGlass
+                        ? "bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100"
+                        : "bg-white text-muted-foreground border-border hover:bg-muted/50"
+                    }
+                  `}
+                >
+                  {col}
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${isActive ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"}`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
           {/* Table */}
           <div className="bg-white rounded-xl border border-border/50 shadow-sm overflow-hidden">
+            {activeCollege === "القاعات الزجاجيه" && (
+              <div className="px-5 py-3 bg-teal-50 border-b border-teal-100 text-teal-800 text-sm font-medium flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-teal-500 inline-block" />
+                عرض مواد القاعات الزجاجيه فقط ({visibleCourses.length} مادة)
+              </div>
+            )}
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-right">
                 <thead className="bg-muted/50 text-muted-foreground">
@@ -224,74 +270,51 @@ export default function Admin() {
                 </thead>
                 <tbody>
                   {isLoading && localCourses.length === 0 ? (
-                    <tr>
-                      <td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">جاري التحميل...</td>
-                    </tr>
-                  ) : localCourses.length === 0 ? (
-                    <tr>
-                      <td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">لا توجد بيانات. انقري على "إضافة صف جديد" للبدء.</td>
-                    </tr>
+                    <tr><td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">جاري التحميل...</td></tr>
+                  ) : visibleCourses.length === 0 ? (
+                    <tr><td colSpan={11} className="px-4 py-10 text-center text-muted-foreground">
+                      لا توجد مواد {activeCollege !== "الكل" ? `في ${activeCollege}` : ""}. اضغطي "إضافة صف جديد".
+                    </td></tr>
                   ) : (
-                    localCourses.map((course, index) => (
-                      <tr key={course._tempId || index} className="border-t border-border/50 hover:bg-muted/20 transition-colors">
-                        <td className="px-2 py-2">
-                          <Input value={course.name || ""} onChange={(e) => updateRow(index, "name", e.target.value)} className="h-8 min-w-[150px] bg-transparent" />
-                        </td>
-                        <td className="px-2 py-2">
-                          <Input value={course.instructor || ""} onChange={(e) => updateRow(index, "instructor", e.target.value)} className="h-8 min-w-[150px] bg-transparent" />
-                        </td>
-                        <td className="px-2 py-2">
-                          <select
-                            value={course.college || ""}
-                            onChange={(e) => updateRow(index, "college", e.target.value)}
-                            className="h-8 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring min-w-[130px]"
-                          >
-                            <option value="" disabled>اختاري الكلية</option>
-                            <option value="تطبيقيه">تطبيقيه</option>
-                            <option value="حاسبات">حاسبات</option>
-                            <option value="عربي">عربي</option>
-                            <option value="صيدلة">صيدلة</option>
-                            <option value="الساعات الزجاجيه">الساعات الزجاجيه</option>
-                          </select>
-                        </td>
-                        <td className="px-2 py-2">
-                          <select
-                            value={course.day || "الأحد"}
-                            onChange={(e) => updateRow(index, "day", e.target.value)}
-                            className="h-8 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                          >
-                            <option value="الأحد">الأحد</option>
-                            <option value="الاثنين">الاثنين</option>
-                            <option value="الثلاثاء">الثلاثاء</option>
-                            <option value="الأربعاء">الأربعاء</option>
-                            <option value="الخميس">الخميس</option>
-                          </select>
-                        </td>
-                        <td className="px-2 py-2">
-                          <Input type="time" value={course.startTime || ""} onChange={(e) => updateRow(index, "startTime", e.target.value)} className="h-8 min-w-[100px] bg-transparent" />
-                        </td>
-                        <td className="px-2 py-2">
-                          <Input type="time" value={course.endTime || ""} onChange={(e) => updateRow(index, "endTime", e.target.value)} className="h-8 min-w-[100px] bg-transparent" />
-                        </td>
-                        <td className="px-2 py-2">
-                          <Input value={course.room || ""} onChange={(e) => updateRow(index, "room", e.target.value)} className="h-8 min-w-[100px] bg-transparent" />
-                        </td>
-                        <td className="px-2 py-2">
-                          <Input value={course.roomDescription || ""} onChange={(e) => updateRow(index, "roomDescription", e.target.value)} placeholder="وصف موقع القاعة..." className="h-8 min-w-[180px] bg-transparent" />
-                        </td>
-                        <td className="px-2 py-2">
-                          <Input value={course.officeHours || ""} onChange={(e) => updateRow(index, "officeHours", e.target.value)} className="h-8 min-w-[120px] bg-transparent" />
-                        </td>
-                        <td className="px-2 py-2">
-                          <Input value={course.officeLocation || ""} onChange={(e) => updateRow(index, "officeLocation", e.target.value)} className="h-8 min-w-[120px] bg-transparent" />
-                        </td>
-                        <td className="px-2 py-2 text-center">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10" onClick={() => removeRow(index)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))
+                    visibleCourses.map((course, vi) => {
+                      const realIndex = visibleIndices[vi];
+                      return (
+                        <tr key={course._tempId || realIndex} className="border-t border-border/50 hover:bg-muted/20 transition-colors">
+                          <td className="px-2 py-2"><Input value={course.name || ""} onChange={(e) => updateRow(realIndex, "name", e.target.value)} className="h-8 min-w-[150px] bg-transparent" /></td>
+                          <td className="px-2 py-2"><Input value={course.instructor || ""} onChange={(e) => updateRow(realIndex, "instructor", e.target.value)} className="h-8 min-w-[150px] bg-transparent" /></td>
+                          <td className="px-2 py-2">
+                            <select
+                              value={course.college || ""}
+                              onChange={(e) => updateRow(realIndex, "college", e.target.value)}
+                              className="h-8 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring min-w-[130px]"
+                            >
+                              <option value="" disabled>اختاري الكلية</option>
+                              {COLLEGE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                            </select>
+                          </td>
+                          <td className="px-2 py-2">
+                            <select value={course.day || "الأحد"} onChange={(e) => updateRow(realIndex, "day", e.target.value)} className="h-8 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                              <option value="الأحد">الأحد</option>
+                              <option value="الاثنين">الاثنين</option>
+                              <option value="الثلاثاء">الثلاثاء</option>
+                              <option value="الأربعاء">الأربعاء</option>
+                              <option value="الخميس">الخميس</option>
+                            </select>
+                          </td>
+                          <td className="px-2 py-2"><Input type="time" value={course.startTime || ""} onChange={(e) => updateRow(realIndex, "startTime", e.target.value)} className="h-8 min-w-[100px] bg-transparent" /></td>
+                          <td className="px-2 py-2"><Input type="time" value={course.endTime || ""} onChange={(e) => updateRow(realIndex, "endTime", e.target.value)} className="h-8 min-w-[100px] bg-transparent" /></td>
+                          <td className="px-2 py-2"><Input value={course.room || ""} onChange={(e) => updateRow(realIndex, "room", e.target.value)} className="h-8 min-w-[100px] bg-transparent" /></td>
+                          <td className="px-2 py-2"><Input value={course.roomDescription || ""} onChange={(e) => updateRow(realIndex, "roomDescription", e.target.value)} placeholder="وصف موقع القاعة..." className="h-8 min-w-[180px] bg-transparent" /></td>
+                          <td className="px-2 py-2"><Input value={course.officeHours || ""} onChange={(e) => updateRow(realIndex, "officeHours", e.target.value)} className="h-8 min-w-[120px] bg-transparent" /></td>
+                          <td className="px-2 py-2"><Input value={course.officeLocation || ""} onChange={(e) => updateRow(realIndex, "officeLocation", e.target.value)} className="h-8 min-w-[120px] bg-transparent" /></td>
+                          <td className="px-2 py-2 text-center">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10" onClick={() => removeRow(realIndex)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -300,10 +323,11 @@ export default function Admin() {
             <div className="p-4 border-t border-border/50 bg-muted/20">
               <Button variant="outline" onClick={addRow} className="w-full border-dashed">
                 <Plus className="w-4 h-4 ml-2" />
-                إضافة صف جديد
+                إضافة {activeCollege !== "الكل" ? `مادة في ${activeCollege}` : "صف جديد"}
               </Button>
             </div>
           </div>
+
         </div>
       </main>
     </div>

@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Header } from "@/components/Header";
 
 const DAYS = ["الكل", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس"];
-const COLLEGES = ["الكل", "تطبيقيه", "حاسبات", "عربي", "صيدلة", "الساعات الزجاجيه"];
+const COLLEGES = ["الكل", "تطبيقيه", "حاسبات", "عربي", "صيدلة", "القاعات الزجاجيه"];
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("discover");
