@@ -19,7 +19,7 @@ export interface Course {
   endTime: string;
   room: string;
   roomDescription?: string;
-  officeHours?: string;
+  section?: string;
   officeLocation?: string;
 }
 
@@ -32,7 +32,7 @@ export interface CreateCourseBody {
   endTime: string;
   room: string;
   roomDescription?: string;
-  officeHours?: string;
+  section?: string;
   officeLocation?: string;
 }
 
@@ -46,7 +46,7 @@ export interface BulkCourseItem {
   endTime: string;
   room: string;
   roomDescription?: string;
-  officeHours?: string;
+  section?: string;
   officeLocation?: string;
 }
 
