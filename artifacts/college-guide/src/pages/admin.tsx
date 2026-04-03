@@ -58,6 +58,7 @@ export default function Admin() {
   const [userHasEdited, setUserHasEdited] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null);
   const [activeCollege, setActiveCollege] = useState("الكل");
+  const [activeInstructor, setActiveInstructor] = useState("الكل");
   const [showAddInstructor, setShowAddInstructor] = useState(false);
   const [newInstructorName, setNewInstructorName] = useState("");
   const [saveConfirm, setSaveConfirm] = useState(false);
@@ -130,10 +131,11 @@ export default function Admin() {
 
   const addRow = (instructor = "") => {
     setUserHasEdited(true);
+    const resolvedInstructor = instructor || (activeInstructor !== "الكل" ? activeInstructor : "");
     setLocalCourses(prev => [...prev, {
       _tempId: Math.random().toString(36).substring(7),
       name: "",
-      instructor,
+      instructor: resolvedInstructor,
       college: activeCollege !== "الكل" ? activeCollege : "",
       day: "الأحد",
       startTime: "",
@@ -227,11 +229,32 @@ export default function Admin() {
   const validCount = localCourses.filter(c => c.name && c.instructor && c.college && c.day && c.startTime && c.endTime && c.room).length;
   const instructorSet = new Set(localCourses.filter(c => c.instructor).map(c => c.instructor));
 
-  const visibleCourses = activeCollege === "الكل" ? localCourses : localCourses.filter(c => c.college === activeCollege);
-  const visibleIndices = activeCollege === "الكل"
-    ? localCourses.map((_, i) => i)
-    : localCourses.map((c, i) => c.college === activeCollege ? i : -1).filter(i => i !== -1);
+  // Unique instructors relevant to the active college filter
+  const instructorList = Array.from(
+    new Set(
+      localCourses
+        .filter(c => c.instructor && (activeCollege === "الكل" || c.college === activeCollege))
+        .map(c => c.instructor as string)
+    )
+  );
+
+  const visibleCourses = localCourses.filter(c => {
+    const matchCollege = activeCollege === "الكل" || c.college === activeCollege;
+    const matchInstructor = activeInstructor === "الكل" || c.instructor === activeInstructor;
+    return matchCollege && matchInstructor;
+  });
+  const visibleIndices = localCourses
+    .map((c, i) => {
+      const matchCollege = activeCollege === "الكل" || c.college === activeCollege;
+      const matchInstructor = activeInstructor === "الكل" || c.instructor === activeInstructor;
+      return matchCollege && matchInstructor ? i : -1;
+    })
+    .filter(i => i !== -1);
+
   const collegeCount = (col: string) => col === "الكل" ? localCourses.length : localCourses.filter(c => c.college === col).length;
+  const instructorCount = (name: string) => name === "الكل"
+    ? localCourses.filter(c => activeCollege === "الكل" || c.college === activeCollege).length
+    : localCourses.filter(c => c.instructor === name && (activeCollege === "الكل" || c.college === activeCollege)).length;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -334,7 +357,7 @@ export default function Admin() {
               const isGlass = col === "القاعات الزجاجيه";
               const isActive = activeCollege === col;
               return (
-                <button key={col} onClick={() => setActiveCollege(col)}
+                <button key={col} onClick={() => { setActiveCollege(col); setActiveInstructor("الكل"); }}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border transition-all ${
                     isActive
                       ? isGlass ? "bg-teal-600 text-white border-teal-600 shadow-sm" : "bg-primary text-white border-primary shadow-sm"
@@ -349,6 +372,44 @@ export default function Admin() {
               );
             })}
           </div>
+
+          {/* Instructor filter chips */}
+          {instructorList.length > 0 && (
+            <div className="bg-white rounded-xl border border-border/50 shadow-sm p-3">
+              <p className="text-xs text-muted-foreground mb-2 font-medium">الدكتور/ة:</p>
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={() => setActiveInstructor("الكل")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                    activeInstructor === "الكل"
+                      ? "bg-primary text-white border-primary shadow-sm"
+                      : "bg-white text-muted-foreground border-border hover:bg-muted/50"
+                  }`}
+                >
+                  الكل
+                  <span className={`text-[10px] px-1 py-0.5 rounded-full ${activeInstructor === "الكل" ? "bg-white/20" : "bg-muted"}`}>
+                    {instructorCount("الكل")}
+                  </span>
+                </button>
+                {instructorList.map(name => (
+                  <button
+                    key={name}
+                    onClick={() => setActiveInstructor(activeInstructor === name ? "الكل" : name)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                      activeInstructor === name
+                        ? "bg-primary text-white border-primary shadow-sm"
+                        : "bg-primary/5 text-primary border-primary/20 hover:bg-primary/10"
+                    }`}
+                  >
+                    {name}
+                    <span className={`text-[10px] px-1 py-0.5 rounded-full ${activeInstructor === name ? "bg-white/20 text-white" : "bg-primary/10 text-primary"}`}>
+                      {instructorCount(name)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Table */}
           <div className="bg-white rounded-xl border border-border/50 shadow-sm overflow-hidden">
