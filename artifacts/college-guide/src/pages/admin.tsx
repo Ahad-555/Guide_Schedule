@@ -6,8 +6,54 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Trash2, Save, CloudOff, CheckCircle2, RotateCcw, ShieldCheck, AlertTriangle, Download, Upload } from "lucide-react";
+import { Plus, Trash2, Save, CloudOff, CheckCircle2, RotateCcw, ShieldCheck, AlertTriangle, Download, Upload, FileSpreadsheet } from "lucide-react";
 import { Link } from "wouter";
+import * as XLSX from "xlsx";
+
+const COLLEGE_MAP: Record<string, string> = {
+  "التطبيقية": "تطبيقيه", "تطبيقية": "تطبيقيه",
+  "الحاسبات": "حاسبات", "حاسبات": "حاسبات",
+  "العربي": "عربي", "عربي": "عربي",
+  "الصيدلة": "صيدلة", "صيدلة": "صيدلة",
+  "القاعات الزجاجية": "القاعات الزجاجيه", "القاعات الزجاجيه": "القاعات الزجاجيه",
+};
+
+const DAY_MAP: Record<string, string> = {
+  "الأحد": "الأحد", "الاحد": "الأحد",
+  "الاثنين": "الاثنين", "الأثنين": "الاثنين", "الإثنين": "الاثنين",
+  "الثلاثاء": "الثلاثاء",
+  "الأربعاء": "الأربعاء", "الاربعاء": "الأربعاء",
+  "الخميس": "الخميس",
+};
+
+function normalizeCollege(raw: string): string {
+  const clean = raw.trim().replace(/\s+/g, "").replace(/ـ/g, "");
+  for (const [key, val] of Object.entries(COLLEGE_MAP)) {
+    if (clean.includes(key.replace(/\s/g, ""))) return val;
+  }
+  return raw.trim();
+}
+
+function normalizeDay(raw: string): string {
+  const clean = raw.trim().replace(/\s+/g, "").replace(/ـ/g, "");
+  for (const [key, val] of Object.entries(DAY_MAP)) {
+    if (clean.includes(key.replace(/\s/g, ""))) return val;
+  }
+  return raw.trim();
+}
+
+function convertExcelTime(timeStr: string): { startTime: string; endTime: string } {
+  const parts = timeStr.split("-").map(s => s.trim());
+  if (parts.length !== 2) return { startTime: "", endTime: "" };
+  const toH24 = (t: string) => {
+    const [hStr, mStr] = t.split(":");
+    let h = parseInt(hStr, 10);
+    const m = parseInt(mStr, 10);
+    if (h >= 1 && h <= 6) h += 12;
+    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+  };
+  return { startTime: toH24(parts[1]), endTime: toH24(parts[0]) };
+}
 
 const DRAFT_KEY = "admin-courses-draft";
 const BACKUP_KEY = "admin-courses-backup";
@@ -66,6 +112,7 @@ export default function Admin() {
   const initializedRef = useRef(false);
   const instructorInputRef = useRef<HTMLInputElement>(null);
   const importFileRef = useRef<HTMLInputElement>(null);
+  const excelFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (initializedRef.current) return;
@@ -151,6 +198,58 @@ export default function Admin() {
       }
     };
     reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  const importExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = new Uint8Array(ev.target?.result as ArrayBuffer);
+        const wb = XLSX.read(data, { type: "array" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows: string[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" }) as string[][];
+
+        const imported: LocalCourse[] = [];
+        for (const row of rows) {
+          const college = String(row[0] ?? "").trim();
+          const instructor = String(row[1] ?? "").trim();
+          const name = String(row[2] ?? "").trim();
+          const day = String(row[4] ?? "").trim();
+          const timeRaw = String(row[5] ?? "").trim();
+          const room = String(row[6] ?? "").trim();
+          const roomDescription = String(row[7] ?? "").trim();
+          const officeLocation = String(row[8] ?? "").trim();
+
+          if (!name || !instructor || !college || college.includes("الكلي")) continue;
+
+          const { startTime, endTime } = convertExcelTime(timeRaw);
+
+          imported.push({
+            _tempId: Math.random().toString(36).substring(7),
+            name,
+            instructor,
+            college: normalizeCollege(college),
+            day: normalizeDay(day),
+            startTime,
+            endTime,
+            room,
+            roomDescription: roomDescription || undefined,
+            officeLocation: officeLocation || undefined,
+          });
+        }
+
+        if (!imported.length) throw new Error("empty");
+        setLocalCourses(imported);
+        setUserHasEdited(true);
+        toast({ title: "✓ تم استيراد الإكسل", description: `تم تحميل ${imported.length} مادة من الجدول. اضغطي "حفظ الكل" لنشرها.` });
+      } catch {
+        toast({ title: "خطأ في قراءة الملف", description: "تأكدي أن الملف بصيغة xlsx وأن الأعمدة: الكلية، الدكتورة، المادة، الشعبة، اليوم، الوقت، القاعة.", variant: "destructive" });
+      }
+    };
+    reader.readAsArrayBuffer(file);
     e.target.value = "";
   };
 
@@ -305,7 +404,24 @@ export default function Admin() {
               <input ref={importFileRef} type="file" accept=".json" className="hidden" onChange={importData} />
               <Button variant="outline" size="sm" onClick={() => importFileRef.current?.click()} className="gap-1.5 text-muted-foreground">
                 <Upload className="w-3.5 h-3.5" />
-                استيراد
+                استيراد JSON
+              </Button>
+
+              <input
+                ref={excelFileRef}
+                type="file"
+                accept=".xlsx,.xls"
+                className="hidden"
+                onChange={importExcel}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => excelFileRef.current?.click()}
+                className="gap-1.5 text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                استيراد إكسل
               </Button>
 
               {userHasEdited && (
