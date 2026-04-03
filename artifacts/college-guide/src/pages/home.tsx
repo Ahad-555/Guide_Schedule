@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Header } from "@/components/Header";
 
 const DAYS = ["الكل", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس"];
+const COLLEGES = ["الكل", "تطبيقيه", "حاسبات", "عربي", "صيدلة"];
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("discover");
@@ -20,11 +21,6 @@ export default function Home() {
   const { data: courses = [], isLoading } = useListCourses({}, { query: { queryKey: getListCoursesQueryKey({}) } });
   const { scheduledIds, addCourse, removeCourse } = useSchedule();
   const schedule = useMemo(() => courses.filter(c => scheduledIds.includes(c.id)), [courses, scheduledIds]);
-
-  const colleges = useMemo(() => {
-    const unique = new Set(courses.map(c => c.college).filter(Boolean));
-    return ["الكل", ...Array.from(unique)];
-  }, [courses]);
 
   const filteredCourses = useMemo(() => {
     return courses.filter(course => {
@@ -88,21 +84,19 @@ export default function Home() {
             {/* Filters */}
             <div className="space-y-4">
               {/* Colleges */}
-              {colleges.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x">
-                  {colleges.map(college => (
-                    <Button
-                      key={college}
-                      variant={selectedCollege === college ? "default" : "outline"}
-                      size="sm"
-                      className="rounded-full snap-start whitespace-nowrap"
-                      onClick={() => setSelectedCollege(college)}
-                    >
-                      {college}
-                    </Button>
-                  ))}
-                </div>
-              )}
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x">
+                {COLLEGES.map(college => (
+                  <Button
+                    key={college}
+                    variant={selectedCollege === college ? "default" : "outline"}
+                    size="sm"
+                    className="rounded-full snap-start whitespace-nowrap"
+                    onClick={() => setSelectedCollege(college)}
+                  >
+                    {college}
+                  </Button>
+                ))}
+              </div>
 
               {/* Days */}
               <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x">
