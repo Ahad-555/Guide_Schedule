@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Clock, MapPin, BookOpen, Trash2, Plus, X, Users } from "lucide-react";
+import { Clock, MapPin, BookOpen, Trash2, Plus, X } from "lucide-react";
 import { Course } from "@workspace/api-client-react/src/generated/api.schemas";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,7 +41,7 @@ export function CourseCard({ course, isScheduled, onAdd, onRemove }: CourseCardP
             </Badge>
           </div>
 
-          {/* Time + room + section row */}
+          {/* Time + room row */}
           <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4 flex-wrap">
             <div className="flex items-center gap-1.5">
               <Clock className="w-4 h-4 shrink-0" />
@@ -51,12 +51,6 @@ export function CourseCard({ course, isScheduled, onAdd, onRemove }: CourseCardP
               <MapPin className="w-4 h-4 shrink-0" />
               <span>{course.room}</span>
             </div>
-            {course.section && (
-              <div className="flex items-center gap-1.5">
-                <Users className="w-4 h-4 shrink-0" />
-                <span>{course.section}</span>
-              </div>
-            )}
           </div>
         </div>
 
