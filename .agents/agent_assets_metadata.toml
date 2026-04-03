@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "McNSqxf59PmLJHINZJFFF"
+uri = "file://backup-courses.json"
+type = "unspecified"
+title = "نسخة احتياطية - جميع المواد (16 مادة)"

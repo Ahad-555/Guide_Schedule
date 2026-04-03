@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Trash2, Save, CloudOff, CheckCircle2, RotateCcw, ShieldCheck, AlertTriangle, Download } from "lucide-react";
+import { Plus, Trash2, Save, CloudOff, CheckCircle2, RotateCcw, ShieldCheck, AlertTriangle, Download, Upload } from "lucide-react";
 import { Link } from "wouter";
 
 const DRAFT_KEY = "admin-courses-draft";
@@ -65,6 +65,7 @@ export default function Admin() {
   const [backupWarning, setBackupWarning] = useState<Backup | null>(null);
   const initializedRef = useRef(false);
   const instructorInputRef = useRef<HTMLInputElement>(null);
+  const importFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (initializedRef.current) return;
@@ -127,6 +128,30 @@ export default function Admin() {
     a.click();
     URL.revokeObjectURL(url);
     toast({ title: "تم التصدير", description: `تم تحميل ملف يحتوي على ${exportCourses.length} مادة.` });
+  };
+
+  const importData = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const json = JSON.parse(ev.target?.result as string);
+        const imported: LocalCourse[] = (json.courses ?? json).map((c: LocalCourse) => ({
+          ...c,
+          id: undefined,
+          _tempId: Math.random().toString(36).substring(7),
+        }));
+        if (!imported.length) throw new Error("empty");
+        setLocalCourses(imported);
+        setUserHasEdited(true);
+        toast({ title: "✓ تم الاستيراد", description: `تم تحميل ${imported.length} مادة. اضغطي "حفظ الكل" لنشرها.` });
+      } catch {
+        toast({ title: "خطأ في الاستيراد", description: "الملف غير صالح. تأكدي أنه ملف JSON مُصدَّر من الأدمن.", variant: "destructive" });
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
   };
 
   const addRow = (instructor = "") => {
@@ -275,6 +300,12 @@ export default function Admin() {
               <Button variant="outline" size="sm" onClick={exportData} className="gap-1.5 text-muted-foreground" disabled={localCourses.length === 0}>
                 <Download className="w-3.5 h-3.5" />
                 تصدير
+              </Button>
+
+              <input ref={importFileRef} type="file" accept=".json" className="hidden" onChange={importData} />
+              <Button variant="outline" size="sm" onClick={() => importFileRef.current?.click()} className="gap-1.5 text-muted-foreground">
+                <Upload className="w-3.5 h-3.5" />
+                استيراد
               </Button>
 
               {userHasEdited && (
