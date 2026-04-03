@@ -241,7 +241,17 @@ export default function Admin() {
                           <Input value={course.instructor || ""} onChange={(e) => updateRow(index, "instructor", e.target.value)} className="h-8 min-w-[150px] bg-transparent" />
                         </td>
                         <td className="px-2 py-2">
-                          <Input value={course.college || ""} onChange={(e) => updateRow(index, "college", e.target.value)} className="h-8 min-w-[150px] bg-transparent" />
+                          <select
+                            value={course.college || ""}
+                            onChange={(e) => updateRow(index, "college", e.target.value)}
+                            className="h-8 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring min-w-[130px]"
+                          >
+                            <option value="" disabled>اختاري الكلية</option>
+                            <option value="تطبيقيه">تطبيقيه</option>
+                            <option value="حاسبات">حاسبات</option>
+                            <option value="عربي">عربي</option>
+                            <option value="صيدلة">صيدلة</option>
+                          </select>
                         </td>
                         <td className="px-2 py-2">
                           <select
