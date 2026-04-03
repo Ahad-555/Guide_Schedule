@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Trash2, Save, CloudOff, CheckCircle2, RotateCcw, ShieldCheck, AlertTriangle, Download, Upload } from "lucide-react";
+import { Plus, Trash2, Save, CloudOff, CheckCircle2, RotateCcw, ShieldCheck, AlertTriangle, Download } from "lucide-react";
 import { Link } from "wouter";
 
 const DRAFT_KEY = "admin-courses-draft";
@@ -64,7 +64,6 @@ export default function Admin() {
   const [backupWarning, setBackupWarning] = useState<Backup | null>(null);
   const initializedRef = useRef(false);
   const instructorInputRef = useRef<HTMLInputElement>(null);
-  const importFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (initializedRef.current) return;
@@ -127,37 +126,6 @@ export default function Admin() {
     a.click();
     URL.revokeObjectURL(url);
     toast({ title: "تم التصدير", description: `تم تحميل ملف يحتوي على ${exportCourses.length} مادة.` });
-  };
-
-  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const parsed = JSON.parse(ev.target?.result as string);
-        let importedCourses: LocalCourse[] = [];
-        if (Array.isArray(parsed)) {
-          importedCourses = parsed;
-        } else if (parsed.courses && Array.isArray(parsed.courses)) {
-          importedCourses = parsed.courses;
-        } else {
-          throw new Error("صيغة الملف غير صحيحة");
-        }
-        const normalized = importedCourses.map(c => ({
-          ...c,
-          id: undefined,
-          _tempId: Math.random().toString(36).substring(7)
-        }));
-        setLocalCourses(normalized);
-        setUserHasEdited(true);
-        toast({ title: "تم الاستيراد", description: `تم تحميل ${normalized.length} مادة من الملف. راجعيها ثم احفظي.` });
-      } catch {
-        toast({ title: "خطأ في الملف", description: "الملف غير صالح أو تالف.", variant: "destructive" });
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = "";
   };
 
   const addRow = (instructor = "") => {
@@ -272,9 +240,6 @@ export default function Admin() {
       <main className="flex-1 p-4 md:p-8">
         <div className="max-w-[1400px] mx-auto space-y-4">
 
-          {/* Hidden file input for import */}
-          <input ref={importFileRef} type="file" accept=".json" className="hidden" onChange={handleImportFile} />
-
           {/* Title row */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
@@ -287,10 +252,6 @@ export default function Admin() {
               <Button variant="outline" size="sm" onClick={exportData} className="gap-1.5 text-muted-foreground" disabled={localCourses.length === 0}>
                 <Download className="w-3.5 h-3.5" />
                 تصدير
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => importFileRef.current?.click()} className="gap-1.5 text-muted-foreground">
-                <Upload className="w-3.5 h-3.5" />
-                استيراد
               </Button>
 
               {userHasEdited && (
