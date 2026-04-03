@@ -6,37 +6,46 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Trash2, Save, CloudOff, CheckCircle2, RotateCcw } from "lucide-react";
+import { Plus, Trash2, Save, CloudOff, CheckCircle2, RotateCcw, ShieldCheck, AlertTriangle } from "lucide-react";
 import { Link } from "wouter";
 
 const DRAFT_KEY = "admin-courses-draft";
+const BACKUP_KEY = "admin-courses-backup";
 const COLLEGES = ["الكل", "تطبيقيه", "حاسبات", "عربي", "صيدلة", "القاعات الزجاجيه"];
 const COLLEGE_OPTIONS = COLLEGES.filter(c => c !== "الكل");
 
 type LocalCourse = Partial<Course & { _tempId: string; roomDescription?: string }>;
+type Backup = { courses: LocalCourse[]; savedAt: string; count: number };
 
 function loadDraft(): LocalCourse[] | null {
   try {
     const raw = localStorage.getItem(DRAFT_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    // Only return draft if it has actual content
     return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 function saveDraft(courses: LocalCourse[]) {
   try {
-    if (courses.length > 0) {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(courses));
-    }
+    if (courses.length > 0) localStorage.setItem(DRAFT_KEY, JSON.stringify(courses));
   } catch {}
 }
 
-function clearDraft() {
-  localStorage.removeItem(DRAFT_KEY);
+function clearDraft() { localStorage.removeItem(DRAFT_KEY); }
+
+function saveBackup(courses: LocalCourse[]) {
+  try {
+    const backup: Backup = { courses, savedAt: new Date().toISOString(), count: courses.length };
+    localStorage.setItem(BACKUP_KEY, JSON.stringify(backup));
+  } catch {}
+}
+
+function loadBackup(): Backup | null {
+  try {
+    const raw = localStorage.getItem(BACKUP_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
 }
 
 export default function Admin() {
@@ -51,31 +60,36 @@ export default function Admin() {
   const [activeCollege, setActiveCollege] = useState("الكل");
   const [showAddInstructor, setShowAddInstructor] = useState(false);
   const [newInstructorName, setNewInstructorName] = useState("");
+  const [saveConfirm, setSaveConfirm] = useState(false);
+  const [backupWarning, setBackupWarning] = useState<Backup | null>(null);
   const initializedRef = useRef(false);
   const instructorInputRef = useRef<HTMLInputElement>(null);
 
-  // Single reliable initialization: wait for server data, prefer draft if user edited
   useEffect(() => {
     if (initializedRef.current) return;
-    if (isLoading) return; // wait until server responds
+    if (isLoading) return;
 
     const draft = loadDraft();
     if (draft) {
-      // User had unsaved work — restore it
       setLocalCourses(draft);
       setUserHasEdited(true);
     } else {
-      // Fresh start from server data
-      setLocalCourses(courses.map(c => ({ ...c, _tempId: String(c.id) })));
+      const serverCourses = courses.map(c => ({ ...c, _tempId: String(c.id) }));
+      setLocalCourses(serverCourses);
       setUserHasEdited(false);
+
+      // Check if backup has more data than server — might indicate data loss
+      const backup = loadBackup();
+      if (backup && backup.count > courses.length + 2) {
+        setBackupWarning(backup);
+      }
     }
     initializedRef.current = true;
   }, [isLoading, courses]);
 
-  // Auto-save draft ONLY when the user has actually made edits (not on init from server)
   useEffect(() => {
     if (!initializedRef.current || !userHasEdited) return;
-    if (localCourses.length === 0) return; // never overwrite with empty
+    if (localCourses.length === 0) return;
     saveDraft(localCourses);
     setDraftSavedAt(new Date());
   }, [localCourses, userHasEdited]);
@@ -85,27 +99,32 @@ export default function Admin() {
     setLocalCourses(courses.map(c => ({ ...c, _tempId: String(c.id) })));
     setUserHasEdited(false);
     setDraftSavedAt(null);
+    setSaveConfirm(false);
     toast({ title: "تم تجاهل التغييرات", description: "تمت استعادة البيانات المحفوظة من الخادم." });
+  };
+
+  const restoreFromBackup = (backup: Backup) => {
+    setLocalCourses(backup.courses);
+    setUserHasEdited(true);
+    setBackupWarning(null);
+    toast({ title: "تمت الاستعادة", description: `تم استعادة ${backup.count} مادة من النسخة الاحتياطية.` });
   };
 
   const addRow = (instructor = "") => {
     setUserHasEdited(true);
-    setLocalCourses(prev => [
-      ...prev,
-      {
-        _tempId: Math.random().toString(36).substring(7),
-        name: "",
-        instructor: instructor || (activeCollege !== "الكل" ? "" : ""),
-        college: activeCollege !== "الكل" ? activeCollege : "",
-        day: "الأحد",
-        startTime: "",
-        endTime: "",
-        room: "",
-        roomDescription: "",
-        officeHours: "",
-        officeLocation: ""
-      }
-    ]);
+    setLocalCourses(prev => [...prev, {
+      _tempId: Math.random().toString(36).substring(7),
+      name: "",
+      instructor,
+      college: activeCollege !== "الكل" ? activeCollege : "",
+      day: "الأحد",
+      startTime: "",
+      endTime: "",
+      room: "",
+      roomDescription: "",
+      officeHours: "",
+      officeLocation: ""
+    }]);
   };
 
   const confirmAddInstructor = () => {
@@ -130,13 +149,14 @@ export default function Admin() {
     setLocalCourses(prev => prev.filter((_, i) => i !== index));
   };
 
-  const saveAll = () => {
+  const doSave = () => {
+    setSaveConfirm(false);
     const validCourses = localCourses.filter(c => c.name && c.instructor && c.college && c.day && c.startTime && c.endTime && c.room);
 
     if (validCourses.length !== localCourses.length) {
       toast({
         title: "بيانات ناقصة",
-        description: "تم تجاهل الصفوف التي لا تحتوي على جميع البيانات الأساسية.",
+        description: `تم تجاهل ${localCourses.length - validCourses.length} صف ناقص البيانات.`,
         variant: "destructive"
       });
     }
@@ -162,31 +182,38 @@ export default function Admin() {
 
     bulkCreate.mutate({ data: { courses: payload } }, {
       onSuccess: () => {
+        saveBackup(validCourses as LocalCourse[]);
         clearDraft();
         setUserHasEdited(false);
         setDraftSavedAt(null);
-        toast({ title: "✓ تم الحفظ بنجاح", description: `تم نشر ${payload.length} مادة للطالبات.` });
+        setBackupWarning(null);
+        toast({ title: "✓ تم الحفظ بنجاح", description: `تم نشر ${payload.length} مادة للطالبات وحفظ نسخة احتياطية.` });
         queryClient.invalidateQueries({ queryKey: getListCoursesQueryKey({}) });
       },
       onError: () => {
-        toast({ title: "خطأ", description: "حدث خطأ أثناء حفظ البيانات، جربي مرة أخرى.", variant: "destructive" });
+        toast({ title: "خطأ في الحفظ", description: "لم يتم الحفظ. بياناتك محفوظة مؤقتاً في الجهاز، جربي مرة أخرى.", variant: "destructive" });
       }
     });
   };
 
-  const formatTime = (d: Date) =>
-    d.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" });
+  const handleSaveClick = () => {
+    if (bulkCreate.isPending) return;
+    const validCount = localCourses.filter(c => c.name && c.instructor && c.college && c.day && c.startTime && c.endTime && c.room).length;
+    if (validCount === 0) { doSave(); return; }
+    setSaveConfirm(true);
+  };
 
-  const visibleCourses = activeCollege === "الكل"
-    ? localCourses
-    : localCourses.filter(c => c.college === activeCollege);
+  const formatTime = (d: Date) => d.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" });
+  const formatDate = (iso: string) => new Date(iso).toLocaleString("ar-SA", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
+  const validCount = localCourses.filter(c => c.name && c.instructor && c.college && c.day && c.startTime && c.endTime && c.room).length;
+  const instructorSet = new Set(localCourses.filter(c => c.instructor).map(c => c.instructor));
+
+  const visibleCourses = activeCollege === "الكل" ? localCourses : localCourses.filter(c => c.college === activeCollege);
   const visibleIndices = activeCollege === "الكل"
     ? localCourses.map((_, i) => i)
     : localCourses.map((c, i) => c.college === activeCollege ? i : -1).filter(i => i !== -1);
-
-  const collegeCount = (col: string) =>
-    col === "الكل" ? localCourses.length : localCourses.filter(c => c.college === col).length;
+  const collegeCount = (col: string) => col === "الكل" ? localCourses.length : localCourses.filter(c => c.college === col).length;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -202,38 +229,79 @@ export default function Admin() {
               <p className="text-muted-foreground text-sm">لوحة التحكم الخاصة بإضافة وتعديل المواد.</p>
             </div>
             <div className="flex items-center gap-3">
-              <Link href="/">
-                <Button variant="outline">العودة للرئيسية</Button>
-              </Link>
+              <Link href="/"><Button variant="outline">العودة للرئيسية</Button></Link>
               {userHasEdited && (
                 <Button variant="ghost" size="sm" onClick={discardDraft} className="text-muted-foreground gap-1.5">
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  تجاهل التغييرات
+                  <RotateCcw className="w-3.5 h-3.5" />تجاهل التغييرات
                 </Button>
               )}
-              <Button onClick={saveAll} className="bg-primary hover:bg-primary/90" disabled={bulkCreate.isPending}>
+              <Button onClick={handleSaveClick} className="bg-primary hover:bg-primary/90" disabled={bulkCreate.isPending}>
                 <Save className="w-4 h-4 ml-2" />
                 {bulkCreate.isPending ? "جاري الحفظ..." : "حفظ الكل"}
               </Button>
             </div>
           </div>
 
+          {/* Backup warning — server has fewer courses than last backup */}
+          {backupWarning && (
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-3 rounded-lg bg-orange-50 border border-orange-200 text-orange-800 text-sm">
+              <AlertTriangle className="w-5 h-5 shrink-0 text-orange-500" />
+              <div className="flex-1">
+                <p className="font-semibold">تم اكتشاف نسخة احتياطية أكبر من البيانات الحالية</p>
+                <p className="text-orange-700 text-xs mt-0.5">
+                  النسخة الاحتياطية تحتوي على {backupWarning.count} مادة (محفوظة {formatDate(backupWarning.savedAt)}) — السيرفر يحتوي على {courses.length} مادة فقط.
+                </p>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <Button size="sm" onClick={() => restoreFromBackup(backupWarning)} className="bg-orange-600 hover:bg-orange-700 text-white h-8">
+                  استعادة النسخة الاحتياطية
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setBackupWarning(null)} className="h-8 text-orange-600">
+                  تجاهل
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Save confirmation banner */}
+          {saveConfirm && (
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-3 rounded-lg bg-primary/5 border-2 border-primary/30 text-sm">
+              <ShieldCheck className="w-5 h-5 shrink-0 text-primary" />
+              <div className="flex-1">
+                <p className="font-semibold text-primary">تأكيد الحفظ</p>
+                <p className="text-muted-foreground text-xs mt-0.5">
+                  ستُنشرين <strong>{validCount} مادة</strong> لـ <strong>{instructorSet.size} دكتور/ة</strong> للطالبات. هذا سيستبدل البيانات الحالية على السيرفر.
+                </p>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <Button size="sm" onClick={doSave} className="bg-primary hover:bg-primary/90 h-8">
+                  نعم، احفظي
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setSaveConfirm(false)} className="h-8">
+                  إلغاء
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Status banner */}
-          {userHasEdited ? (
-            <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
-              <CloudOff className="w-4 h-4 shrink-0" />
-              <span>
-                لديكِ تغييرات غير محفوظة للطالبات
-                {draftSavedAt && <span className="text-amber-600 mr-1">— حُفظت مؤقتاً الساعة {formatTime(draftSavedAt)}</span>}
-              </span>
-              <span className="mr-auto text-amber-600 text-xs font-medium">اضغطي "حفظ الكل" لنشرها</span>
-            </div>
-          ) : localCourses.length > 0 ? (
-            <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
-              <span>كل البيانات منشورة للطالبات</span>
-            </div>
-          ) : null}
+          {!saveConfirm && !backupWarning && (
+            userHasEdited ? (
+              <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+                <CloudOff className="w-4 h-4 shrink-0" />
+                <span>
+                  لديكِ تغييرات غير محفوظة
+                  {draftSavedAt && <span className="text-amber-600 mr-1">— مؤقتاً الساعة {formatTime(draftSavedAt)}</span>}
+                </span>
+                <span className="mr-auto text-amber-600 text-xs font-medium">اضغطي "حفظ الكل" لنشرها</span>
+              </div>
+            ) : localCourses.length > 0 ? (
+              <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>كل البيانات منشورة للطالبات</span>
+              </div>
+            ) : null
+          )}
 
           {/* College filter tabs */}
           <div className="flex gap-2 flex-wrap">
@@ -242,9 +310,7 @@ export default function Admin() {
               const isGlass = col === "القاعات الزجاجيه";
               const isActive = activeCollege === col;
               return (
-                <button
-                  key={col}
-                  onClick={() => setActiveCollege(col)}
+                <button key={col} onClick={() => setActiveCollege(col)}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border transition-all ${
                     isActive
                       ? isGlass ? "bg-teal-600 text-white border-teal-600 shadow-sm" : "bg-primary text-white border-primary shadow-sm"
@@ -290,7 +356,7 @@ export default function Admin() {
                     <tr><td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">جاري التحميل...</td></tr>
                   ) : visibleCourses.length === 0 ? (
                     <tr><td colSpan={11} className="px-4 py-10 text-center text-muted-foreground">
-                      لا توجد مواد{activeCollege !== "الكل" ? ` في ${activeCollege}` : ""}. اضغطي "إضافة" للبدء.
+                      لا توجد مواد{activeCollege !== "الكل" ? ` في ${activeCollege}` : ""}. اضغطي "إضافة دكتورة" للبدء.
                     </td></tr>
                   ) : (
                     visibleCourses.map((course, vi) => {
@@ -307,7 +373,7 @@ export default function Admin() {
                               <td colSpan={11} className="px-4 py-2">
                                 <div className="flex items-center gap-3">
                                   <div className="w-1.5 h-5 rounded-full bg-primary/50 shrink-0" />
-                                  <span className="font-semibold text-primary text-sm">{course.instructor || "—"}</span>
+                                  <span className="font-semibold text-primary text-sm">{course.instructor}</span>
                                   <span className="text-xs text-muted-foreground bg-white border border-border px-2 py-0.5 rounded-full">
                                     {instructorCourseCount} {instructorCourseCount === 1 ? "مادة" : "مواد"}
                                   </span>
@@ -316,38 +382,38 @@ export default function Admin() {
                               </td>
                             </tr>
                           )}
-                        <tr className="border-t border-border/50 hover:bg-muted/20 transition-colors">
-                          <td className="px-2 py-2"><Input value={course.name || ""} onChange={(e) => updateRow(realIndex, "name", e.target.value)} className="h-8 min-w-[150px] bg-transparent" /></td>
-                          <td className="px-2 py-2"><Input value={course.instructor || ""} onChange={(e) => updateRow(realIndex, "instructor", e.target.value)} className="h-8 min-w-[150px] bg-transparent" /></td>
-                          <td className="px-2 py-2">
-                            <select value={course.college || ""} onChange={(e) => updateRow(realIndex, "college", e.target.value)}
-                              className="h-8 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring min-w-[130px]">
-                              <option value="" disabled>اختاري الكلية</option>
-                              {COLLEGE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                            </select>
-                          </td>
-                          <td className="px-2 py-2">
-                            <select value={course.day || "الأحد"} onChange={(e) => updateRow(realIndex, "day", e.target.value)}
-                              className="h-8 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-                              <option value="الأحد">الأحد</option>
-                              <option value="الاثنين">الاثنين</option>
-                              <option value="الثلاثاء">الثلاثاء</option>
-                              <option value="الأربعاء">الأربعاء</option>
-                              <option value="الخميس">الخميس</option>
-                            </select>
-                          </td>
-                          <td className="px-2 py-2"><Input type="time" value={course.startTime || ""} onChange={(e) => updateRow(realIndex, "startTime", e.target.value)} className="h-8 min-w-[100px] bg-transparent" /></td>
-                          <td className="px-2 py-2"><Input type="time" value={course.endTime || ""} onChange={(e) => updateRow(realIndex, "endTime", e.target.value)} className="h-8 min-w-[100px] bg-transparent" /></td>
-                          <td className="px-2 py-2"><Input value={course.room || ""} onChange={(e) => updateRow(realIndex, "room", e.target.value)} className="h-8 min-w-[100px] bg-transparent" /></td>
-                          <td className="px-2 py-2"><Input value={course.roomDescription || ""} onChange={(e) => updateRow(realIndex, "roomDescription", e.target.value)} placeholder="وصف موقع القاعة..." className="h-8 min-w-[180px] bg-transparent" /></td>
-                          <td className="px-2 py-2"><Input value={course.officeHours || ""} onChange={(e) => updateRow(realIndex, "officeHours", e.target.value)} className="h-8 min-w-[120px] bg-transparent" /></td>
-                          <td className="px-2 py-2"><Input value={course.officeLocation || ""} onChange={(e) => updateRow(realIndex, "officeLocation", e.target.value)} className="h-8 min-w-[120px] bg-transparent" /></td>
-                          <td className="px-2 py-2 text-center">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10" onClick={() => removeRow(realIndex)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </td>
-                        </tr>
+                          <tr className="border-t border-border/50 hover:bg-muted/20 transition-colors">
+                            <td className="px-2 py-2"><Input value={course.name || ""} onChange={(e) => updateRow(realIndex, "name", e.target.value)} className="h-8 min-w-[150px] bg-transparent" /></td>
+                            <td className="px-2 py-2"><Input value={course.instructor || ""} onChange={(e) => updateRow(realIndex, "instructor", e.target.value)} className="h-8 min-w-[150px] bg-transparent" /></td>
+                            <td className="px-2 py-2">
+                              <select value={course.college || ""} onChange={(e) => updateRow(realIndex, "college", e.target.value)}
+                                className="h-8 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring min-w-[130px]">
+                                <option value="" disabled>اختاري الكلية</option>
+                                {COLLEGE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                              </select>
+                            </td>
+                            <td className="px-2 py-2">
+                              <select value={course.day || "الأحد"} onChange={(e) => updateRow(realIndex, "day", e.target.value)}
+                                className="h-8 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                                <option value="الأحد">الأحد</option>
+                                <option value="الاثنين">الاثنين</option>
+                                <option value="الثلاثاء">الثلاثاء</option>
+                                <option value="الأربعاء">الأربعاء</option>
+                                <option value="الخميس">الخميس</option>
+                              </select>
+                            </td>
+                            <td className="px-2 py-2"><Input type="time" value={course.startTime || ""} onChange={(e) => updateRow(realIndex, "startTime", e.target.value)} className="h-8 min-w-[100px] bg-transparent" /></td>
+                            <td className="px-2 py-2"><Input type="time" value={course.endTime || ""} onChange={(e) => updateRow(realIndex, "endTime", e.target.value)} className="h-8 min-w-[100px] bg-transparent" /></td>
+                            <td className="px-2 py-2"><Input value={course.room || ""} onChange={(e) => updateRow(realIndex, "room", e.target.value)} className="h-8 min-w-[100px] bg-transparent" /></td>
+                            <td className="px-2 py-2"><Input value={course.roomDescription || ""} onChange={(e) => updateRow(realIndex, "roomDescription", e.target.value)} placeholder="وصف موقع القاعة..." className="h-8 min-w-[180px] bg-transparent" /></td>
+                            <td className="px-2 py-2"><Input value={course.officeHours || ""} onChange={(e) => updateRow(realIndex, "officeHours", e.target.value)} className="h-8 min-w-[120px] bg-transparent" /></td>
+                            <td className="px-2 py-2"><Input value={course.officeLocation || ""} onChange={(e) => updateRow(realIndex, "officeLocation", e.target.value)} className="h-8 min-w-[120px] bg-transparent" /></td>
+                            <td className="px-2 py-2 text-center">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10" onClick={() => removeRow(realIndex)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </td>
+                          </tr>
                         </Fragment>
                       );
                     })
@@ -357,7 +423,6 @@ export default function Admin() {
             </div>
 
             <div className="p-4 border-t border-border/50 bg-muted/20 space-y-3">
-              {/* Add instructor inline form */}
               {showAddInstructor && (
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
                   <div className="w-1.5 h-5 rounded-full bg-primary/50 shrink-0" />
@@ -383,20 +448,13 @@ export default function Admin() {
               )}
 
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowAddInstructor(true);
-                    setTimeout(() => instructorInputRef.current?.focus(), 50);
-                  }}
-                  className="flex-1 border-dashed border-primary/40 text-primary hover:bg-primary/5"
-                >
-                  <Plus className="w-4 h-4 ml-2" />
-                  إضافة دكتورة
+                <Button variant="outline"
+                  onClick={() => { setShowAddInstructor(true); setTimeout(() => instructorInputRef.current?.focus(), 50); }}
+                  className="flex-1 border-dashed border-primary/40 text-primary hover:bg-primary/5">
+                  <Plus className="w-4 h-4 ml-2" />إضافة دكتورة
                 </Button>
                 <Button variant="outline" onClick={() => addRow()} className="flex-1 border-dashed text-muted-foreground">
-                  <Plus className="w-4 h-4 ml-2" />
-                  إضافة صف جديد
+                  <Plus className="w-4 h-4 ml-2" />إضافة صف جديد
                 </Button>
               </div>
             </div>
