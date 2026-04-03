@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Fragment } from "react";
 import { useListCourses, useBulkCreateCourses, getListCoursesQueryKey } from "@workspace/api-client-react";
 import { Course, BulkCourseItem } from "@workspace/api-client-react/src/generated/api.schemas";
 import { useToast } from "@/hooks/use-toast";
@@ -284,8 +284,28 @@ export default function Admin() {
                   ) : (
                     visibleCourses.map((course, vi) => {
                       const realIndex = visibleIndices[vi];
+                      const prevInstructor = vi > 0 ? visibleCourses[vi - 1].instructor : null;
+                      const isNewInstructor = course.instructor && course.instructor !== prevInstructor;
+                      const instructorCourseCount = course.instructor
+                        ? visibleCourses.filter(c => c.instructor === course.instructor).length
+                        : 0;
                       return (
-                        <tr key={course._tempId || realIndex} className="border-t border-border/50 hover:bg-muted/20 transition-colors">
+                        <Fragment key={course._tempId || realIndex}>
+                          {isNewInstructor && (
+                            <tr className="bg-primary/5 border-t-2 border-primary/20">
+                              <td colSpan={11} className="px-4 py-2">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-1.5 h-5 rounded-full bg-primary/50 shrink-0" />
+                                  <span className="font-semibold text-primary text-sm">{course.instructor || "—"}</span>
+                                  <span className="text-xs text-muted-foreground bg-white border border-border px-2 py-0.5 rounded-full">
+                                    {instructorCourseCount} {instructorCourseCount === 1 ? "مادة" : "مواد"}
+                                  </span>
+                                  <div className="flex-1 h-px bg-primary/10" />
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        <tr className="border-t border-border/50 hover:bg-muted/20 transition-colors">
                           <td className="px-2 py-2"><Input value={course.name || ""} onChange={(e) => updateRow(realIndex, "name", e.target.value)} className="h-8 min-w-[150px] bg-transparent" /></td>
                           <td className="px-2 py-2"><Input value={course.instructor || ""} onChange={(e) => updateRow(realIndex, "instructor", e.target.value)} className="h-8 min-w-[150px] bg-transparent" /></td>
                           <td className="px-2 py-2">
@@ -317,6 +337,7 @@ export default function Admin() {
                             </Button>
                           </td>
                         </tr>
+                        </Fragment>
                       );
                     })
                   )}
