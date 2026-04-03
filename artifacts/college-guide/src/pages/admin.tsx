@@ -251,6 +251,7 @@ export default function Admin() {
                             <option value="حاسبات">حاسبات</option>
                             <option value="عربي">عربي</option>
                             <option value="صيدلة">صيدلة</option>
+                            <option value="الساعات الزجاجيه">الساعات الزجاجيه</option>
                           </select>
                         </td>
                         <td className="px-2 py-2">
