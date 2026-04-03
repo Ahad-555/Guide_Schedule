@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Lock } from "lucide-react";
+import { Lock, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Link } from "wouter";
 
 const ADMIN_PASSWORD = "ahd2026";
 const STORAGE_KEY = "admin_auth";
@@ -83,6 +84,12 @@ export function AdminGuard({ children }: AdminGuardProps) {
           >
             دخول
           </Button>
+          <Link href="/">
+            <Button type="button" variant="ghost" className="w-full text-muted-foreground gap-2">
+              <ArrowRight className="w-4 h-4" />
+              رجوع للرئيسية
+            </Button>
+          </Link>
         </form>
       </div>
     </div>
