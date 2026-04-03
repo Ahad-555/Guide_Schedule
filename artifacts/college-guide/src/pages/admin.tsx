@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Trash2, Save, CloudOff, CheckCircle2, RotateCcw, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, Save, CloudOff, CheckCircle2, RotateCcw, ShieldCheck, AlertTriangle, Download, Upload } from "lucide-react";
 import { Link } from "wouter";
 
 const DRAFT_KEY = "admin-courses-draft";
@@ -64,6 +64,7 @@ export default function Admin() {
   const [backupWarning, setBackupWarning] = useState<Backup | null>(null);
   const initializedRef = useRef(false);
   const instructorInputRef = useRef<HTMLInputElement>(null);
+  const importFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (initializedRef.current) return;
@@ -108,6 +109,55 @@ export default function Admin() {
     setUserHasEdited(true);
     setBackupWarning(null);
     toast({ title: "تمت الاستعادة", description: `تم استعادة ${backup.count} مادة من النسخة الاحتياطية.` });
+  };
+
+  const exportData = () => {
+    const exportCourses = localCourses.map(({ _tempId, ...rest }) => rest);
+    const exportObj = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      count: exportCourses.length,
+      courses: exportCourses
+    };
+    const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `جدول-المواد-${new Date().toLocaleDateString("ar-SA").replace(/\//g, "-")}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "تم التصدير", description: `تم تحميل ملف يحتوي على ${exportCourses.length} مادة.` });
+  };
+
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const parsed = JSON.parse(ev.target?.result as string);
+        let importedCourses: LocalCourse[] = [];
+        if (Array.isArray(parsed)) {
+          importedCourses = parsed;
+        } else if (parsed.courses && Array.isArray(parsed.courses)) {
+          importedCourses = parsed.courses;
+        } else {
+          throw new Error("صيغة الملف غير صحيحة");
+        }
+        const normalized = importedCourses.map(c => ({
+          ...c,
+          id: undefined,
+          _tempId: Math.random().toString(36).substring(7)
+        }));
+        setLocalCourses(normalized);
+        setUserHasEdited(true);
+        toast({ title: "تم الاستيراد", description: `تم تحميل ${normalized.length} مادة من الملف. راجعيها ثم احفظي.` });
+      } catch {
+        toast({ title: "خطأ في الملف", description: "الملف غير صالح أو تالف.", variant: "destructive" });
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
   };
 
   const addRow = (instructor = "") => {
@@ -222,17 +272,30 @@ export default function Admin() {
       <main className="flex-1 p-4 md:p-8">
         <div className="max-w-[1400px] mx-auto space-y-4">
 
+          {/* Hidden file input for import */}
+          <input ref={importFileRef} type="file" accept=".json" className="hidden" onChange={handleImportFile} />
+
           {/* Title row */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-primary">إدارة المواد</h1>
               <p className="text-muted-foreground text-sm">لوحة التحكم الخاصة بإضافة وتعديل المواد.</p>
             </div>
-            <div className="flex items-center gap-3">
-              <Link href="/"><Button variant="outline">العودة للرئيسية</Button></Link>
+            <div className="flex items-center gap-2 flex-wrap justify-end">
+              <Link href="/"><Button variant="outline" size="sm">العودة للرئيسية</Button></Link>
+
+              <Button variant="outline" size="sm" onClick={exportData} className="gap-1.5 text-muted-foreground" disabled={localCourses.length === 0}>
+                <Download className="w-3.5 h-3.5" />
+                تصدير
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => importFileRef.current?.click()} className="gap-1.5 text-muted-foreground">
+                <Upload className="w-3.5 h-3.5" />
+                استيراد
+              </Button>
+
               {userHasEdited && (
                 <Button variant="ghost" size="sm" onClick={discardDraft} className="text-muted-foreground gap-1.5">
-                  <RotateCcw className="w-3.5 h-3.5" />تجاهل التغييرات
+                  <RotateCcw className="w-3.5 h-3.5" />تجاهل
                 </Button>
               )}
               <Button onClick={handleSaveClick} className="bg-primary hover:bg-primary/90" disabled={bulkCreate.isPending}>
