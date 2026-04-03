@@ -108,7 +108,6 @@ export default function Admin() {
   const [showAddInstructor, setShowAddInstructor] = useState(false);
   const [newInstructorName, setNewInstructorName] = useState("");
   const [saveConfirm, setSaveConfirm] = useState(false);
-  const [deleteAllConfirm, setDeleteAllConfirm] = useState(false);
   const [backupWarning, setBackupWarning] = useState<Backup | null>(null);
   const initializedRef = useRef(false);
   const instructorInputRef = useRef<HTMLInputElement>(null);
@@ -343,13 +342,6 @@ export default function Admin() {
     });
   };
 
-  const doDeleteAll = () => {
-    setDeleteAllConfirm(false);
-    setLocalCourses([]);
-    setUserHasEdited(true);
-    toast({ title: "تم حذف الكل", description: "اضغطي 'حفظ الكل' لتطبيق الحذف على السيرفر." });
-  };
-
   const handleSaveClick = () => {
     if (bulkCreate.isPending) return;
     const validCount = localCourses.filter(c => c.name && c.instructor && c.college && c.day && c.startTime && c.endTime && c.room).length;
@@ -434,17 +426,6 @@ export default function Admin() {
                 استيراد إكسل
               </Button>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setDeleteAllConfirm(true)}
-                className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/5"
-                disabled={localCourses.length === 0}
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                حذف الكل
-              </Button>
-
               {userHasEdited && (
                 <Button variant="ghost" size="sm" onClick={discardDraft} className="text-muted-foreground gap-1.5">
                   <RotateCcw className="w-3.5 h-3.5" />تجاهل
@@ -499,28 +480,8 @@ export default function Admin() {
             </div>
           )}
 
-          {deleteAllConfirm && (
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-3 rounded-lg bg-destructive/5 border-2 border-destructive/30 text-sm">
-              <Trash2 className="w-5 h-5 shrink-0 text-destructive" />
-              <div className="flex-1">
-                <p className="font-semibold text-destructive">تأكيد حذف الكل</p>
-                <p className="text-muted-foreground text-xs mt-0.5">
-                  ستُحذفين جميع <strong>{localCourses.length} مادة</strong> من القائمة. اضغطي "حفظ الكل" بعدها لتطبيق الحذف على السيرفر.
-                </p>
-              </div>
-              <div className="flex gap-2 shrink-0">
-                <Button size="sm" onClick={doDeleteAll} className="bg-destructive hover:bg-destructive/90 h-8 text-white">
-                  نعم، احذفي
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => setDeleteAllConfirm(false)} className="h-8">
-                  إلغاء
-                </Button>
-              </div>
-            </div>
-          )}
-
           {/* Status banner */}
-          {!saveConfirm && !deleteAllConfirm && !backupWarning && (
+          {!saveConfirm && !backupWarning && (
             userHasEdited ? (
               <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
                 <CloudOff className="w-4 h-4 shrink-0" />
