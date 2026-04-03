@@ -49,7 +49,10 @@ export default function Admin() {
   const [userHasEdited, setUserHasEdited] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null);
   const [activeCollege, setActiveCollege] = useState("الكل");
+  const [showAddInstructor, setShowAddInstructor] = useState(false);
+  const [newInstructorName, setNewInstructorName] = useState("");
   const initializedRef = useRef(false);
+  const instructorInputRef = useRef<HTMLInputElement>(null);
 
   // Single reliable initialization: wait for server data, prefer draft if user edited
   useEffect(() => {
@@ -85,14 +88,14 @@ export default function Admin() {
     toast({ title: "تم تجاهل التغييرات", description: "تمت استعادة البيانات المحفوظة من الخادم." });
   };
 
-  const addRow = () => {
+  const addRow = (instructor = "") => {
     setUserHasEdited(true);
     setLocalCourses(prev => [
       ...prev,
       {
         _tempId: Math.random().toString(36).substring(7),
         name: "",
-        instructor: "",
+        instructor: instructor || (activeCollege !== "الكل" ? "" : ""),
         college: activeCollege !== "الكل" ? activeCollege : "",
         day: "الأحد",
         startTime: "",
@@ -103,6 +106,14 @@ export default function Admin() {
         officeLocation: ""
       }
     ]);
+  };
+
+  const confirmAddInstructor = () => {
+    const name = newInstructorName.trim();
+    if (!name) return;
+    addRow(name);
+    setNewInstructorName("");
+    setShowAddInstructor(false);
   };
 
   const updateRow = (index: number, field: string, value: string) => {
@@ -345,11 +356,49 @@ export default function Admin() {
               </table>
             </div>
 
-            <div className="p-4 border-t border-border/50 bg-muted/20">
-              <Button variant="outline" onClick={addRow} className="w-full border-dashed">
-                <Plus className="w-4 h-4 ml-2" />
-                إضافة {activeCollege !== "الكل" ? `مادة في ${activeCollege}` : "صف جديد"}
-              </Button>
+            <div className="p-4 border-t border-border/50 bg-muted/20 space-y-3">
+              {/* Add instructor inline form */}
+              {showAddInstructor && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                  <div className="w-1.5 h-5 rounded-full bg-primary/50 shrink-0" />
+                  <Input
+                    ref={instructorInputRef}
+                    value={newInstructorName}
+                    onChange={e => setNewInstructorName(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === "Enter") confirmAddInstructor();
+                      if (e.key === "Escape") { setShowAddInstructor(false); setNewInstructorName(""); }
+                    }}
+                    placeholder="اسم الدكتورة... (مثال: د. سارة العمري)"
+                    className="flex-1 h-8 bg-white text-sm"
+                    autoFocus
+                  />
+                  <Button size="sm" onClick={confirmAddInstructor} disabled={!newInstructorName.trim()} className="bg-primary hover:bg-primary/90 h-8 px-4">
+                    إضافة
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => { setShowAddInstructor(false); setNewInstructorName(""); }} className="h-8 text-muted-foreground">
+                    إلغاء
+                  </Button>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddInstructor(true);
+                    setTimeout(() => instructorInputRef.current?.focus(), 50);
+                  }}
+                  className="flex-1 border-dashed border-primary/40 text-primary hover:bg-primary/5"
+                >
+                  <Plus className="w-4 h-4 ml-2" />
+                  إضافة دكتورة
+                </Button>
+                <Button variant="outline" onClick={() => addRow()} className="flex-1 border-dashed text-muted-foreground">
+                  <Plus className="w-4 h-4 ml-2" />
+                  إضافة صف جديد
+                </Button>
+              </div>
             </div>
           </div>
 
