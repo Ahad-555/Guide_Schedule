@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Clock, MapPin, BookOpen, Trash2, Plus, X } from "lucide-react";
+import { Clock, MapPin, BookOpen, Trash2, Plus, X, Users } from "lucide-react";
 import { Course } from "@workspace/api-client-react/src/generated/api.schemas";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,7 +41,7 @@ export function CourseCard({ course, isScheduled, onAdd, onRemove }: CourseCardP
             </Badge>
           </div>
 
-          {/* Time + room row */}
+          {/* Time + room + section row */}
           <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4 flex-wrap">
             <div className="flex items-center gap-1.5">
               <Clock className="w-4 h-4 shrink-0" />
@@ -51,6 +51,12 @@ export function CourseCard({ course, isScheduled, onAdd, onRemove }: CourseCardP
               <MapPin className="w-4 h-4 shrink-0" />
               <span>{course.room}</span>
             </div>
+            {course.section && (
+              <div className="flex items-center gap-1.5">
+                <Users className="w-4 h-4 shrink-0" />
+                <span>{course.section}</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -187,7 +193,7 @@ export function CourseCard({ course, isScheduled, onAdd, onRemove }: CourseCardP
                     )
                   ) : (
                     <>
-                      {course.officeLocation && (
+                      {course.officeLocation ? (
                         <div className="bg-primary/5 rounded-2xl p-4 flex items-start gap-3">
                           <div className="bg-primary/15 rounded-xl p-2 shrink-0 mt-0.5">
                             <MapPin className="w-5 h-5 text-primary" />
@@ -197,21 +203,9 @@ export function CourseCard({ course, isScheduled, onAdd, onRemove }: CourseCardP
                             <p className="font-semibold text-primary text-sm">{course.officeLocation}</p>
                           </div>
                         </div>
-                      )}
-                      {course.officeHours && (
-                        <div className="bg-primary/5 rounded-2xl p-4 flex items-start gap-3">
-                          <div className="bg-primary/15 rounded-xl p-2 shrink-0 mt-0.5">
-                            <Clock className="w-5 h-5 text-primary" />
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground mb-1">ساعات المكتب</p>
-                            <p className="font-semibold text-primary text-sm">{course.officeHours}</p>
-                          </div>
-                        </div>
-                      )}
-                      {!course.officeLocation && !course.officeHours && (
+                      ) : (
                         <div className="text-center py-6 text-muted-foreground text-sm">
-                          لا تتوفر معلومات المكتب
+                          لا يتوفر موقع مكتب
                         </div>
                       )}
                     </>

@@ -217,6 +217,7 @@ export default function Admin() {
           const college = String(row[0] ?? "").trim();
           const instructor = String(row[1] ?? "").trim();
           const name = String(row[2] ?? "").trim();
+          const section = String(row[3] ?? "").trim();
           const day = String(row[4] ?? "").trim();
           const timeRaw = String(row[5] ?? "").trim();
           const room = String(row[6] ?? "").trim();
@@ -237,6 +238,7 @@ export default function Admin() {
             endTime,
             room,
             roomDescription: roomDescription || undefined,
+            section: section || undefined,
             officeLocation: officeLocation || undefined,
           });
         }
@@ -266,7 +268,7 @@ export default function Admin() {
       endTime: "",
       room: "",
       roomDescription: "",
-      officeHours: "",
+      section: "",
       officeLocation: ""
     }]);
   };
@@ -320,7 +322,7 @@ export default function Admin() {
       endTime: c.endTime!,
       room: c.room!,
       roomDescription: c.roomDescription || undefined,
-      officeHours: c.officeHours,
+      section: c.section,
       officeLocation: c.officeLocation
     }));
 
@@ -578,7 +580,7 @@ export default function Admin() {
                     <th className="px-4 py-3 font-medium whitespace-nowrap min-w-[100px]">وقت النهاية</th>
                     <th className="px-4 py-3 font-medium whitespace-nowrap min-w-[100px]">القاعة</th>
                     <th className="px-4 py-3 font-medium whitespace-nowrap min-w-[180px]">وصف القاعة</th>
-                    <th className="px-4 py-3 font-medium whitespace-nowrap min-w-[120px]">ساعات المكتب</th>
+                    <th className="px-4 py-3 font-medium whitespace-nowrap min-w-[120px]">الشعبة</th>
                     <th className="px-4 py-3 font-medium whitespace-nowrap min-w-[120px]">موقع المكتب</th>
                     <th className="px-4 py-3 font-medium w-[60px]"></th>
                   </tr>
@@ -638,7 +640,7 @@ export default function Admin() {
                             <td className="px-2 py-2"><Input type="time" value={course.endTime || ""} onChange={(e) => updateRow(realIndex, "endTime", e.target.value)} className="h-8 min-w-[100px] bg-transparent" /></td>
                             <td className="px-2 py-2"><Input value={course.room || ""} onChange={(e) => updateRow(realIndex, "room", e.target.value)} className="h-8 min-w-[100px] bg-transparent" /></td>
                             <td className="px-2 py-2"><Input value={course.roomDescription || ""} onChange={(e) => updateRow(realIndex, "roomDescription", e.target.value)} placeholder="وصف موقع القاعة..." className="h-8 min-w-[180px] bg-transparent" /></td>
-                            <td className="px-2 py-2"><Input value={course.officeHours || ""} onChange={(e) => updateRow(realIndex, "officeHours", e.target.value)} className="h-8 min-w-[120px] bg-transparent" /></td>
+                            <td className="px-2 py-2"><Input value={course.section || ""} onChange={(e) => updateRow(realIndex, "section", e.target.value)} placeholder="مثال: GW1" className="h-8 min-w-[100px] bg-transparent" /></td>
                             <td className="px-2 py-2"><Input value={course.officeLocation || ""} onChange={(e) => updateRow(realIndex, "officeLocation", e.target.value)} className="h-8 min-w-[120px] bg-transparent" /></td>
                             <td className="px-2 py-2 text-center">
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10" onClick={() => removeRow(realIndex)}>

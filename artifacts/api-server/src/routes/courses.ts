@@ -53,7 +53,7 @@ router.get("/courses", async (req, res) => {
     endTime: c.endTime,
     room: c.room,
     roomDescription: c.roomDescription ?? undefined,
-    officeHours: c.officeHours ?? undefined,
+    section: c.section ?? undefined,
     officeLocation: c.officeLocation ?? undefined,
   })));
 });
@@ -74,7 +74,7 @@ router.post("/courses", async (req, res) => {
     endTime: data.endTime,
     room: data.room,
     roomDescription: data.roomDescription ?? null,
-    officeHours: data.officeHours ?? null,
+    section: data.section ?? null,
     officeLocation: data.officeLocation ?? null,
   }).returning();
   res.status(201).json({
@@ -87,7 +87,7 @@ router.post("/courses", async (req, res) => {
     endTime: course.endTime,
     room: course.room,
     roomDescription: course.roomDescription ?? undefined,
-    officeHours: course.officeHours ?? undefined,
+    section: course.section ?? undefined,
     officeLocation: course.officeLocation ?? undefined,
   });
 });
@@ -126,7 +126,7 @@ router.post("/courses/bulk", async (req, res) => {
       endTime: c.endTime,
       room: c.room,
       roomDescription: c.roomDescription ?? null,
-      officeHours: c.officeHours ?? null,
+      section: c.section ?? null,
       officeLocation: c.officeLocation ?? null,
     }).where(eq(coursesTable.id, c.id as number));
   }
@@ -144,7 +144,7 @@ router.post("/courses/bulk", async (req, res) => {
         endTime: c.endTime,
         room: c.room,
         roomDescription: c.roomDescription ?? null,
-        officeHours: c.officeHours ?? null,
+        section: c.section ?? null,
         officeLocation: c.officeLocation ?? null,
       }))
     ).returning();
@@ -175,7 +175,7 @@ router.get("/courses/:id", async (req, res) => {
     endTime: course.endTime,
     room: course.room,
     roomDescription: course.roomDescription ?? undefined,
-    officeHours: course.officeHours ?? undefined,
+    section: course.section ?? undefined,
     officeLocation: course.officeLocation ?? undefined,
   });
 });
@@ -197,7 +197,7 @@ router.put("/courses/:id", async (req, res) => {
     endTime: data.endTime,
     room: data.room,
     roomDescription: data.roomDescription ?? null,
-    officeHours: data.officeHours ?? null,
+    section: data.section ?? null,
     officeLocation: data.officeLocation ?? null,
   }).where(eq(coursesTable.id, paramParse.data.id)).returning();
   if (!updated) {
@@ -214,7 +214,7 @@ router.put("/courses/:id", async (req, res) => {
     endTime: updated.endTime,
     room: updated.room,
     roomDescription: updated.roomDescription ?? undefined,
-    officeHours: updated.officeHours ?? undefined,
+    section: updated.section ?? undefined,
     officeLocation: updated.officeLocation ?? undefined,
   });
 });

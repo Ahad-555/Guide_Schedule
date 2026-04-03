@@ -15,6 +15,6 @@ export interface CreateCourseBody {
   endTime: string;
   room: string;
   roomDescription?: string;
-  officeHours?: string;
+  section?: string;
   officeLocation?: string;
 }

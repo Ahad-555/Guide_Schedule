@@ -12,7 +12,7 @@ export const coursesTable = pgTable("courses", {
   endTime: text("end_time").notNull(),
   room: text("room").notNull(),
   roomDescription: text("room_description"),
-  officeHours: text("office_hours"),
+  section: text("section"),
   officeLocation: text("office_location"),
 });
 
