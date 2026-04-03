@@ -7,7 +7,15 @@ import Home from "@/pages/home";
 import Admin from "@/pages/admin";
 import { AdminGuard } from "@/components/AdminGuard";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 10,
+      refetchOnWindowFocus: false,
+      retry: 2,
+    },
+  },
+});
 
 function Router() {
   return (
