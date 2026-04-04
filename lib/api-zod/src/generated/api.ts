@@ -33,6 +33,7 @@ export const ListCoursesResponseItem = zod.object({
   endTime: zod.string(),
   room: zod.string(),
   roomDescription: zod.string().optional(),
+  section: zod.string().optional(),
   officeHours: zod.string().optional(),
   officeLocation: zod.string().optional(),
 });
@@ -50,6 +51,7 @@ export const CreateCourseBody = zod.object({
   endTime: zod.string(),
   room: zod.string(),
   roomDescription: zod.string().optional(),
+  section: zod.string().optional(),
   officeHours: zod.string().optional(),
   officeLocation: zod.string().optional(),
 });
@@ -71,6 +73,7 @@ export const GetCourseResponse = zod.object({
   endTime: zod.string(),
   room: zod.string(),
   roomDescription: zod.string().optional(),
+  section: zod.string().optional(),
   officeHours: zod.string().optional(),
   officeLocation: zod.string().optional(),
 });
@@ -91,6 +94,7 @@ export const UpdateCourseBody = zod.object({
   endTime: zod.string(),
   room: zod.string(),
   roomDescription: zod.string().optional(),
+  section: zod.string().optional(),
   officeHours: zod.string().optional(),
   officeLocation: zod.string().optional(),
 });
@@ -105,6 +109,7 @@ export const UpdateCourseResponse = zod.object({
   endTime: zod.string(),
   room: zod.string(),
   roomDescription: zod.string().optional(),
+  section: zod.string().optional(),
   officeHours: zod.string().optional(),
   officeLocation: zod.string().optional(),
 });
@@ -131,6 +136,7 @@ export const BulkCreateCoursesBody = zod.object({
       endTime: zod.string(),
       room: zod.string(),
       roomDescription: zod.string().optional(),
+      section: zod.string().optional(),
       officeHours: zod.string().optional(),
       officeLocation: zod.string().optional(),
     }),

@@ -322,8 +322,8 @@ export default function Admin() {
       endTime: c.endTime!,
       room: c.room!,
       roomDescription: c.roomDescription || undefined,
-      section: c.section,
-      officeLocation: c.officeLocation
+      section: c.section || undefined,
+      officeLocation: c.officeLocation || undefined
     }));
 
     bulkCreate.mutate({ data: { courses: payload } }, {
