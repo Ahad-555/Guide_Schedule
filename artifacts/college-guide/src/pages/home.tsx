@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useListCourses, getListCoursesQueryKey } from "@workspace/api-client-react";
-import { Search, Users, ChevronDown, X } from "lucide-react";
+import { Search, Users, ChevronDown, X, Bell, BellOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CourseCard } from "@/components/CourseCard";
@@ -8,6 +8,7 @@ import { useSchedule } from "@/hooks/use-schedule";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
 import { Header } from "@/components/Header";
+import { useNotifications } from "@/hooks/use-notifications";
 
 const DAYS = ["الكل", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس"];
 const COLLEGES = ["الكل", "تطبيقيه", "حاسبات", "عربي", "صيدلة", "القاعات الزجاجيه"];
@@ -35,6 +36,12 @@ export default function Home() {
     try { return localStorage.getItem(SECTION_KEY) ?? ""; } catch { return ""; }
   });
   const [showSectionPicker, setShowSectionPicker] = useState(false);
+  const [notifEnabled, setNotifEnabled] = useState<boolean>(() => {
+    try { return localStorage.getItem("notif-enabled") === "1"; } catch { return false; }
+  });
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
+    typeof Notification !== "undefined" ? Notification.permission : "denied"
+  );
 
   const { data: courses = [], isLoading } = useListCourses({}, { query: { queryKey: getListCoursesQueryKey({}) } });
   const { scheduledIds, addCourse, removeCourse } = useSchedule();
@@ -48,6 +55,28 @@ export default function Home() {
   useEffect(() => {
     try { localStorage.setItem(SECTION_KEY, mySection); } catch {}
   }, [mySection]);
+
+  useEffect(() => {
+    try { localStorage.setItem("notif-enabled", notifEnabled ? "1" : "0"); } catch {}
+  }, [notifEnabled]);
+
+  const toggleNotifications = async () => {
+    if (notifEnabled) {
+      setNotifEnabled(false);
+      return;
+    }
+    if (typeof Notification === "undefined") return;
+    if (Notification.permission === "granted") {
+      setNotifEnabled(true);
+      setNotifPermission("granted");
+    } else if (Notification.permission !== "denied") {
+      const result = await Notification.requestPermission();
+      setNotifPermission(result);
+      if (result === "granted") setNotifEnabled(true);
+    }
+  };
+
+  useNotifications(courses, mySection, notifEnabled && notifPermission === "granted");
 
   const filteredCourses = useMemo(() => {
     return courses.filter(course => {
@@ -190,6 +219,34 @@ export default function Home() {
                   </Button>
                 ))}
               </div>
+
+              {/* Notifications toggle */}
+              {typeof Notification !== "undefined" && notifPermission !== "denied" && (
+                <button
+                  onClick={toggleNotifications}
+                  className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border transition-all duration-200 ${
+                    notifEnabled
+                      ? "bg-amber-50 border-amber-300 text-amber-700"
+                      : "bg-white border-border/50 text-muted-foreground"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {notifEnabled
+                      ? <Bell className="w-4 h-4 shrink-0 text-amber-600" />
+                      : <BellOff className="w-4 h-4 shrink-0" />
+                    }
+                    <span className="text-sm font-medium">
+                      {notifEnabled
+                        ? "الإشعارات مفعّلة — سيتم تنبيهك قبل 5 دقائق من المحاضرة"
+                        : "فعّلي إشعارات بداية المحاضرات"
+                      }
+                    </span>
+                  </div>
+                  <div className={`relative w-10 h-6 rounded-full transition-colors duration-200 shrink-0 ${notifEnabled ? "bg-amber-400" : "bg-muted"}`}>
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-200 ${notifEnabled ? "left-5" : "left-1"}`} />
+                  </div>
+                </button>
+              )}
 
               {/* Search */}
               <div className="relative">
