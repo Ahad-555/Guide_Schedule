@@ -1,0 +1,19 @@
+{
+  "name": "دليل كليتي التفاعلي",
+  "short_name": "دليل كليتي",
+  "description": "جدول المحاضرات التفاعلي",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#166534",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

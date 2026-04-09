@@ -222,9 +222,12 @@ export default function Home() {
 
               {/* Notifications toggle */}
               {typeof Notification === "undefined" ? (
-                <div className="flex items-center gap-2 px-4 py-3 rounded-2xl border border-border/50 bg-white text-muted-foreground text-sm">
-                  <BellOff className="w-4 h-4 shrink-0" />
-                  <span>الإشعارات غير مدعومة في هذا المتصفح</span>
+                <div className="flex items-start gap-3 px-4 py-3 rounded-2xl border border-blue-200 bg-blue-50 text-blue-800 text-sm">
+                  <Bell className="w-4 h-4 shrink-0 mt-0.5 text-blue-500" />
+                  <div className="space-y-1">
+                    <p className="font-medium">لتفعيل الإشعارات على الجوال:</p>
+                    <p className="text-blue-700">اضغطي على <strong>مشاركة</strong> ثم <strong>أضف إلى الشاشة الرئيسية</strong> — ثم افتحي التطبيق منها</p>
+                  </div>
                 </div>
               ) : notifPermission === "denied" ? (
                 <div className="flex items-center gap-2 px-4 py-3 rounded-2xl border border-orange-200 bg-orange-50 text-orange-700 text-sm">
