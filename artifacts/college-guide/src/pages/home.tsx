@@ -221,7 +221,17 @@ export default function Home() {
               </div>
 
               {/* Notifications toggle */}
-              {typeof Notification !== "undefined" && notifPermission !== "denied" && (
+              {typeof Notification === "undefined" ? (
+                <div className="flex items-center gap-2 px-4 py-3 rounded-2xl border border-border/50 bg-white text-muted-foreground text-sm">
+                  <BellOff className="w-4 h-4 shrink-0" />
+                  <span>الإشعارات غير مدعومة في هذا المتصفح</span>
+                </div>
+              ) : notifPermission === "denied" ? (
+                <div className="flex items-center gap-2 px-4 py-3 rounded-2xl border border-orange-200 bg-orange-50 text-orange-700 text-sm">
+                  <BellOff className="w-4 h-4 shrink-0" />
+                  <span>الإشعارات محظورة — فعّليها من إعدادات المتصفح ثم أعيدي تحميل الصفحة</span>
+                </div>
+              ) : (
                 <button
                   onClick={toggleNotifications}
                   className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border transition-all duration-200 ${
