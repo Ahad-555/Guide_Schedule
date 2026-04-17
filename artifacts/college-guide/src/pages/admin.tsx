@@ -112,6 +112,7 @@ export default function Admin() {
   const [newInstructorName, setNewInstructorName] = useState("");
   const [saveConfirm, setSaveConfirm] = useState(false);
   const [backupWarning, setBackupWarning] = useState<Backup | null>(null);
+  const [adminTab, setAdminTab] = useState<"courses" | "assistant">("courses");
   const initializedRef = useRef(false);
   const instructorInputRef = useRef<HTMLInputElement>(null);
   const importFileRef = useRef<HTMLInputElement>(null);
@@ -455,54 +456,82 @@ export default function Admin() {
       <main className="flex-1 p-4 md:p-8">
         <div className="max-w-[1400px] mx-auto space-y-4">
 
-          {/* Title row */}
+          {/* Title + tabs row */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-primary">إدارة المواد</h1>
-              <p className="text-muted-foreground text-sm">لوحة التحكم الخاصة بإضافة وتعديل المواد.</p>
+              <h1 className="text-2xl font-bold text-primary">لوحة التحكم</h1>
+              <p className="text-muted-foreground text-sm">إدارة المواد ومساعدة القاعات</p>
             </div>
             <div className="flex items-center gap-2 flex-wrap justify-end">
               <Link href="/"><Button variant="outline" size="sm">العودة للرئيسية</Button></Link>
 
-              <Button variant="outline" size="sm" onClick={exportData} className="gap-1.5 text-muted-foreground" disabled={localCourses.length === 0}>
-                <Download className="w-3.5 h-3.5" />
-                تصدير
-              </Button>
-
-              <input ref={importFileRef} type="file" accept=".json" className="hidden" onChange={importData} />
-              <Button variant="outline" size="sm" onClick={() => importFileRef.current?.click()} className="gap-1.5 text-muted-foreground">
-                <Upload className="w-3.5 h-3.5" />
-                استيراد JSON
-              </Button>
-
-              <input
-                ref={excelFileRef}
-                type="file"
-                accept=".xlsx,.xls"
-                className="hidden"
-                onChange={importExcel}
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => excelFileRef.current?.click()}
-                className="gap-1.5 text-emerald-700 border-emerald-300 hover:bg-emerald-50"
-              >
-                <FileSpreadsheet className="w-3.5 h-3.5" />
-                استيراد إكسل
-              </Button>
-
-              {userHasEdited && (
-                <Button variant="ghost" size="sm" onClick={discardDraft} className="text-muted-foreground gap-1.5">
-                  <RotateCcw className="w-3.5 h-3.5" />تجاهل
+              {adminTab === "courses" && (<>
+                <Button variant="outline" size="sm" onClick={exportData} className="gap-1.5 text-muted-foreground" disabled={localCourses.length === 0}>
+                  <Download className="w-3.5 h-3.5" />
+                  تصدير
                 </Button>
-              )}
-              <Button onClick={handleSaveClick} className="bg-primary hover:bg-primary/90" disabled={bulkCreate.isPending}>
-                <Save className="w-4 h-4 ml-2" />
-                {bulkCreate.isPending ? "جاري الحفظ..." : "حفظ الكل"}
-              </Button>
+
+                <input ref={importFileRef} type="file" accept=".json" className="hidden" onChange={importData} />
+                <Button variant="outline" size="sm" onClick={() => importFileRef.current?.click()} className="gap-1.5 text-muted-foreground">
+                  <Upload className="w-3.5 h-3.5" />
+                  استيراد JSON
+                </Button>
+
+                <input
+                  ref={excelFileRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  className="hidden"
+                  onChange={importExcel}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => excelFileRef.current?.click()}
+                  className="gap-1.5 text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5" />
+                  استيراد إكسل
+                </Button>
+
+                {userHasEdited && (
+                  <Button variant="ghost" size="sm" onClick={discardDraft} className="text-muted-foreground gap-1.5">
+                    <RotateCcw className="w-3.5 h-3.5" />تجاهل
+                  </Button>
+                )}
+                <Button onClick={handleSaveClick} className="bg-primary hover:bg-primary/90" disabled={bulkCreate.isPending}>
+                  <Save className="w-4 h-4 ml-2" />
+                  {bulkCreate.isPending ? "جاري الحفظ..." : "حفظ الكل"}
+                </Button>
+              </>)}
             </div>
           </div>
+
+          {/* Tab navigation */}
+          <div className="flex gap-2 border-b border-border/50 pb-0">
+            <button
+              onClick={() => setAdminTab("courses")}
+              className={`px-5 py-2.5 text-sm font-medium rounded-t-xl border-b-2 transition-colors ${
+                adminTab === "courses"
+                  ? "border-primary text-primary bg-primary/5"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              📋 إدارة المواد
+            </button>
+            <button
+              onClick={() => setAdminTab("assistant")}
+              className={`px-5 py-2.5 text-sm font-medium rounded-t-xl border-b-2 transition-colors ${
+                adminTab === "assistant"
+                  ? "border-green-600 text-green-700 bg-green-50"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              🤖 مساعد القاعات
+            </button>
+          </div>
+
+          {adminTab === "courses" && (<>
 
           {/* Backup warning — server has fewer courses than last backup */}
           {backupWarning && (
@@ -760,15 +789,17 @@ export default function Admin() {
             </div>
           </div>
 
-          {/* Assistant Knowledge Section */}
+          </>)}
+
+          {adminTab === "assistant" && (
           <div className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden">
             <div className="flex items-center gap-3 px-5 py-4 border-b border-border/50 bg-green-50">
               <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
                 <Bot className="w-4 h-4 text-green-700" />
               </div>
               <div>
-                <h2 className="font-bold text-green-800 text-sm">معلومات مساعدة دليل كليتي</h2>
-                <p className="text-xs text-green-600">أضيفي معلومات عن القاعات والمباني ليستخدمها المساعد عند الإجابة</p>
+                <h2 className="font-bold text-green-800 text-sm">دليل القاعات والمواقع</h2>
+                <p className="text-xs text-green-600">أضيفي وصفاً لكل قاعة أو موقع — المساعد يرجعه للطالبة عند السؤال</p>
               </div>
             </div>
 
@@ -779,13 +810,13 @@ export default function Admin() {
                   <Input
                     value={editingKn.title}
                     onChange={e => setEditingKn(k => k ? { ...k, title: e.target.value } : null)}
-                    placeholder="عنوان المعلومة"
+                    placeholder="اسم القاعة أو الموقع (مثال: قاعة L206، قاعة 201، مبنى الحاسبات...)"
                     className="text-sm"
                   />
                   <textarea
                     value={editingKn.content}
                     onChange={e => setEditingKn(k => k ? { ...k, content: e.target.value } : null)}
-                    placeholder="تفاصيل المعلومة..."
+                    placeholder="وصف القاعة وكيفية الوصول إليها..."
                     rows={3}
                     className="w-full text-sm px-3 py-2 rounded-md border border-input bg-background resize-none focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
@@ -801,13 +832,13 @@ export default function Admin() {
                   <Input
                     value={newKnTitle}
                     onChange={e => setNewKnTitle(e.target.value)}
-                    placeholder="عنوان المعلومة (مثال: موقع القاعة L206، الوصول لمبنى الحاسبات...)"
+                    placeholder="اسم القاعة أو الموقع (مثال: قاعة L206، قاعة 201، مبنى الحاسبات...)"
                     className="text-sm"
                   />
                   <textarea
                     value={newKnContent}
                     onChange={e => setNewKnContent(e.target.value)}
-                    placeholder="اكتبي هنا التفاصيل التي تريدين المساعدة أن تعرفها وتخبر بها الطالبات..."
+                    placeholder="اكتبي وصف القاعة وكيفية الوصول إليها حتى تعرف الطالبة وين تروح..."
                     rows={3}
                     className="w-full text-sm px-3 py-2 rounded-md border border-input bg-background resize-none focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
@@ -826,14 +857,14 @@ export default function Admin() {
               {knowledgeLoading ? (
                 <p className="text-sm text-muted-foreground text-center py-4">جاري التحميل...</p>
               ) : knowledge.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">لا توجد معلومات بعد — أضيفي أول معلومة للمساعد</p>
+                <p className="text-sm text-muted-foreground text-center py-4">لا توجد قاعات مضافة بعد — أضيفي وصف أول قاعة</p>
               ) : (
                 <div className="space-y-2">
                   {knowledge.map(item => (
                     <div key={item.id} className="flex items-start gap-3 p-3 rounded-xl border border-border/50 bg-white">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold">{item.title}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.content}</p>
+                        <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">{item.content}</p>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary" onClick={() => setEditingKn(item)}>
@@ -849,6 +880,7 @@ export default function Admin() {
               )}
             </div>
           </div>
+          )}
 
         </div>
       </main>
