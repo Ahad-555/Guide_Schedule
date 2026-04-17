@@ -18,7 +18,7 @@ const API_BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") + "/api";
 
 export function AssistantModal({ open, onClose }: AssistantModalProps) {
   const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", content: "أهلاً! أنا مساعدة دليل كليتي 🎓 كيف أقدر أساعدك؟ سليني عن القاعات أو المحاضرات أو أي شيء تحتاجينه 😊" }
+    { role: "assistant", content: "أهلاً! أنا مساعدة دليل كليتي 🎓 كيف أقدر أساعدك؟ اسأليني عن القاعات أو المحاضرات أو أي شيء تحتاجينه 😊" }
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
