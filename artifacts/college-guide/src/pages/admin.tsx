@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Trash2, Save, CloudOff, CheckCircle2, RotateCcw, ShieldCheck, AlertTriangle, Download, Upload, FileSpreadsheet } from "lucide-react";
+import { Plus, Trash2, Save, CloudOff, CheckCircle2, RotateCcw, ShieldCheck, AlertTriangle, Download, Upload, FileSpreadsheet, Bot, Pencil } from "lucide-react";
 import { Link } from "wouter";
 import * as XLSX from "xlsx";
 
@@ -58,6 +58,9 @@ function convertExcelTime(timeStr: string): { startTime: string; endTime: string
 const DRAFT_KEY = "admin-courses-draft";
 const BACKUP_KEY = "admin-courses-backup";
 const COLLEGES = ["الكل", "تطبيقيه", "حاسبات", "عربي", "صيدلة", "القاعات الزجاجيه"];
+const API_BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") + "/api";
+
+interface KnowledgeItem { id: number; title: string; content: string; }
 const COLLEGE_OPTIONS = COLLEGES.filter(c => c !== "الكل");
 
 type LocalCourse = Partial<Course & { _tempId: string; roomDescription?: string }>;
@@ -113,6 +116,13 @@ export default function Admin() {
   const instructorInputRef = useRef<HTMLInputElement>(null);
   const importFileRef = useRef<HTMLInputElement>(null);
   const excelFileRef = useRef<HTMLInputElement>(null);
+
+  const [knowledge, setKnowledge] = useState<KnowledgeItem[]>([]);
+  const [knowledgeLoading, setKnowledgeLoading] = useState(false);
+  const [newKnTitle, setNewKnTitle] = useState("");
+  const [newKnContent, setNewKnContent] = useState("");
+  const [editingKn, setEditingKn] = useState<KnowledgeItem | null>(null);
+  const [knSaving, setKnSaving] = useState(false);
 
   useEffect(() => {
     if (initializedRef.current) return;
@@ -376,6 +386,62 @@ export default function Admin() {
       return matchCollege && matchInstructor ? i : -1;
     })
     .filter(i => i !== -1);
+
+  useEffect(() => {
+    setKnowledgeLoading(true);
+    fetch(`${API_BASE}/assistant/knowledge`)
+      .then(r => r.json())
+      .then(data => setKnowledge(Array.isArray(data) ? data : []))
+      .catch(() => {})
+      .finally(() => setKnowledgeLoading(false));
+  }, []);
+
+  const addKnowledge = async () => {
+    if (!newKnTitle.trim() || !newKnContent.trim()) return;
+    setKnSaving(true);
+    try {
+      const res = await fetch(`${API_BASE}/assistant/knowledge`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newKnTitle.trim(), content: newKnContent.trim() }),
+      });
+      const item = await res.json();
+      setKnowledge(prev => [...prev, item]);
+      setNewKnTitle("");
+      setNewKnContent("");
+      toast({ title: "✓ تمت الإضافة", description: "تمت إضافة المعلومة للمساعد الذكي." });
+    } catch {
+      toast({ title: "خطأ", description: "فشل الحفظ، حاولي مجدداً.", variant: "destructive" });
+    } finally {
+      setKnSaving(false);
+    }
+  };
+
+  const updateKnowledge = async () => {
+    if (!editingKn || !editingKn.title.trim() || !editingKn.content.trim()) return;
+    setKnSaving(true);
+    try {
+      const res = await fetch(`${API_BASE}/assistant/knowledge/${editingKn.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: editingKn.title.trim(), content: editingKn.content.trim() }),
+      });
+      const item = await res.json();
+      setKnowledge(prev => prev.map(k => k.id === item.id ? item : k));
+      setEditingKn(null);
+      toast({ title: "✓ تم التحديث", description: "تم تحديث المعلومة بنجاح." });
+    } catch {
+      toast({ title: "خطأ", description: "فشل التحديث.", variant: "destructive" });
+    } finally {
+      setKnSaving(false);
+    }
+  };
+
+  const deleteKnowledge = async (id: number) => {
+    await fetch(`${API_BASE}/assistant/knowledge/${id}`, { method: "DELETE" });
+    setKnowledge(prev => prev.filter(k => k.id !== id));
+    toast({ title: "تم الحذف" });
+  };
 
   const collegeCount = (col: string) => col === "الكل" ? localCourses.length : localCourses.filter(c => c.college === col).length;
   const instructorCount = (name: string) => name === "الكل"
@@ -691,6 +757,96 @@ export default function Admin() {
                   <Plus className="w-4 h-4 ml-2" />إضافة صف جديد
                 </Button>
               </div>
+            </div>
+          </div>
+
+          {/* Assistant Knowledge Section */}
+          <div className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden">
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-border/50 bg-green-50">
+              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                <Bot className="w-4 h-4 text-green-700" />
+              </div>
+              <div>
+                <h2 className="font-bold text-green-800 text-sm">معلومات مساعدة دليل كليتي</h2>
+                <p className="text-xs text-green-600">أضيفي معلومات عن القاعات والمباني ليستخدمها المساعد عند الإجابة</p>
+              </div>
+            </div>
+
+            <div className="p-5 space-y-4">
+              {editingKn ? (
+                <div className="space-y-2 p-4 bg-green-50 rounded-xl border border-green-200">
+                  <p className="text-xs font-medium text-green-700 mb-2">تعديل المعلومة</p>
+                  <Input
+                    value={editingKn.title}
+                    onChange={e => setEditingKn(k => k ? { ...k, title: e.target.value } : null)}
+                    placeholder="عنوان المعلومة"
+                    className="text-sm"
+                  />
+                  <textarea
+                    value={editingKn.content}
+                    onChange={e => setEditingKn(k => k ? { ...k, content: e.target.value } : null)}
+                    placeholder="تفاصيل المعلومة..."
+                    rows={3}
+                    className="w-full text-sm px-3 py-2 rounded-md border border-input bg-background resize-none focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={updateKnowledge} disabled={knSaving} className="bg-green-600 hover:bg-green-700">
+                      {knSaving ? "جاري الحفظ..." : "حفظ التعديل"}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setEditingKn(null)}>إلغاء</Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2 p-4 bg-muted/30 rounded-xl border border-dashed border-border">
+                  <Input
+                    value={newKnTitle}
+                    onChange={e => setNewKnTitle(e.target.value)}
+                    placeholder="عنوان المعلومة (مثال: موقع القاعة L206، الوصول لمبنى الحاسبات...)"
+                    className="text-sm"
+                  />
+                  <textarea
+                    value={newKnContent}
+                    onChange={e => setNewKnContent(e.target.value)}
+                    placeholder="اكتبي هنا التفاصيل التي تريدين المساعدة أن تعرفها وتخبر بها الطالبات..."
+                    rows={3}
+                    className="w-full text-sm px-3 py-2 rounded-md border border-input bg-background resize-none focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={addKnowledge}
+                    disabled={!newKnTitle.trim() || !newKnContent.trim() || knSaving}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <Plus className="w-3.5 h-3.5 ml-1.5" />
+                    {knSaving ? "جاري الإضافة..." : "إضافة للمساعد"}
+                  </Button>
+                </div>
+              )}
+
+              {knowledgeLoading ? (
+                <p className="text-sm text-muted-foreground text-center py-4">جاري التحميل...</p>
+              ) : knowledge.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">لا توجد معلومات بعد — أضيفي أول معلومة للمساعد</p>
+              ) : (
+                <div className="space-y-2">
+                  {knowledge.map(item => (
+                    <div key={item.id} className="flex items-start gap-3 p-3 rounded-xl border border-border/50 bg-white">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold">{item.title}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.content}</p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary" onClick={() => setEditingKn(item)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => deleteKnowledge(item.id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

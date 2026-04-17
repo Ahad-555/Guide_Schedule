@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useListCourses, getListCoursesQueryKey } from "@workspace/api-client-react";
-import { Search, Users, ChevronDown, X } from "lucide-react";
+import { Search, Bot } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CourseCard } from "@/components/CourseCard";
@@ -8,10 +8,10 @@ import { useSchedule } from "@/hooks/use-schedule";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
 import { Header } from "@/components/Header";
+import { AssistantModal } from "@/components/AssistantModal";
 
 const DAYS = ["الكل", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس"];
 const COLLEGES = ["الكل", "تطبيقيه", "حاسبات", "عربي", "صيدلة", "القاعات الزجاجيه"];
-const SECTION_KEY = "my-section";
 
 const DAY_NAMES: Record<number, string> = {
   0: "الأحد",
@@ -31,33 +31,20 @@ export default function Home() {
   const [search, setSearch] = useState("");
   const [selectedDay, setSelectedDay] = useState<string>(() => getTodaySaudi());
   const [selectedCollege, setSelectedCollege] = useState("الكل");
-  const [mySection, setMySection] = useState<string>(() => {
-    try { return localStorage.getItem(SECTION_KEY) ?? ""; } catch { return ""; }
-  });
-  const [showSectionPicker, setShowSectionPicker] = useState(false);
+  const [showAssistant, setShowAssistant] = useState(false);
 
   const { data: courses = [], isLoading } = useListCourses({}, { query: { queryKey: getListCoursesQueryKey({}) } });
   const { scheduledIds, addCourse, removeCourse } = useSchedule();
   const schedule = useMemo(() => courses.filter(c => scheduledIds.includes(c.id)), [courses, scheduledIds]);
-
-  const availableSections = useMemo(() => {
-    const s = [...new Set(courses.map(c => c.section).filter(Boolean))] as string[];
-    return s.sort();
-  }, [courses]);
-
-  useEffect(() => {
-    try { localStorage.setItem(SECTION_KEY, mySection); } catch {}
-  }, [mySection]);
 
   const filteredCourses = useMemo(() => {
     return courses.filter(course => {
       const matchesSearch = course.name.includes(search) || course.instructor.includes(search);
       const matchesDay = selectedDay === "الكل" || course.day === selectedDay;
       const matchesCollege = selectedCollege === "الكل" || course.college === selectedCollege;
-      const matchesSection = !mySection || !course.section || course.section === mySection;
-      return matchesSearch && matchesDay && matchesCollege && matchesSection;
+      return matchesSearch && matchesDay && matchesCollege;
     });
-  }, [courses, search, selectedDay, selectedCollege, mySection]);
+  }, [courses, search, selectedDay, selectedCollege]);
 
   const groupedCourses = useMemo(() => {
     const grouped: Record<string, typeof courses> = {};
@@ -95,70 +82,6 @@ export default function Home() {
           </TabsList>
 
           <TabsContent value="discover" className="space-y-6 mt-0 outline-none">
-            {/* Section picker banner */}
-            {availableSections.length > 0 && (
-              <div className="relative">
-                <button
-                  onClick={() => setShowSectionPicker(v => !v)}
-                  className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border transition-all duration-200 ${
-                    mySection
-                      ? "bg-primary/5 border-primary/30 text-primary"
-                      : "bg-white border-border/50 text-muted-foreground"
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 shrink-0" />
-                    <span className="text-sm font-medium">
-                      {mySection ? `شعبتك: ${mySection}` : "اختاري شعبتك لتصفية المواد"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {mySection && (
-                      <span
-                        role="button"
-                        onClick={e => { e.stopPropagation(); setMySection(""); setShowSectionPicker(false); }}
-                        className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary/30 transition-colors"
-                      >
-                        <X className="w-3 h-3 text-primary" />
-                      </span>
-                    )}
-                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showSectionPicker ? "rotate-180" : ""}`} />
-                  </div>
-                </button>
-
-                <AnimatePresence>
-                  {showSectionPicker && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -6, scale: 0.97 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -6, scale: 0.97 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute top-full mt-2 right-0 left-0 z-20 bg-white border border-border/50 rounded-2xl shadow-lg overflow-hidden"
-                    >
-                      <div className="p-3">
-                        <p className="text-xs text-muted-foreground mb-2 px-1">اختاري شعبتك</p>
-                        <div className="flex flex-wrap gap-2">
-                          {availableSections.map(sec => (
-                            <button
-                              key={sec}
-                              onClick={() => { setMySection(sec); setShowSectionPicker(false); }}
-                              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-150 ${
-                                mySection === sec
-                                  ? "bg-primary text-white shadow-sm"
-                                  : "bg-primary/8 text-primary hover:bg-primary/15 border border-primary/20"
-                              }`}
-                            >
-                              {sec}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
-
             {/* Filters */}
             <div className="space-y-4">
               {/* Colleges */}
@@ -307,6 +230,16 @@ export default function Home() {
       <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50 mt-auto bg-white/50">
         دليل كليتي التفاعلي — عهد الشمري © 2026
       </footer>
+
+      <button
+        onClick={() => setShowAssistant(true)}
+        className="fixed bottom-6 left-6 z-30 flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105 active:scale-95"
+      >
+        <Bot className="w-5 h-5" />
+        <span className="text-sm font-bold">مساعدة دليل كليتي</span>
+      </button>
+
+      <AssistantModal open={showAssistant} onClose={() => setShowAssistant(false)} />
     </div>
   );
 }
