@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, assistantKnowledgeTable, coursesTable } from "@workspace/db";
+import { db, assistantKnowledgeTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
 const router = Router();
@@ -67,50 +67,28 @@ router.post("/assistant/chat", async (req, res) => {
 
   const keywords = getKeywords(message);
   if (keywords.length === 0) {
-    res.json({ reply: "اكتبي اسم القاعة أو رقمها أو اسم المادة وسأساعدك 😊" });
+    res.json({ reply: "اكتبي اسم القاعة أو رقمها وسأخبرك وين هي 😊" });
     return;
   }
 
-  const [courses, knowledge] = await Promise.all([
-    db.select().from(coursesTable),
-    db.select().from(assistantKnowledgeTable),
-  ]);
+  const knowledge = await db.select().from(assistantKnowledgeTable);
 
-  const parts: string[] = [];
-
-  // Search knowledge items first (admin-written descriptions)
-  const matchedKnowledge = knowledge.filter(k =>
+  const matched = knowledge.filter(k =>
     matches(k.title, keywords) || matches(k.content, keywords)
   );
-  for (const k of matchedKnowledge) {
-    parts.push(`📍 **${k.title}**\n${k.content}`);
-  }
 
-  // Search courses by room, name, or instructor
-  const matchedCourses = courses.filter(c =>
-    matches(c.room, keywords) ||
-    matches(c.name, keywords) ||
-    matches(c.instructor, keywords)
-  );
-
-  if (matchedCourses.length > 0) {
-    const courseLines = matchedCourses.map(c => {
-      const time = `${c.startTime} - ${c.endTime}`;
-      const section = c.section ? ` | شعبة ${c.section}` : "";
-      return `• **${c.name}** — د. ${c.instructor}\n  📅 ${c.day} | ⏰ ${time} | 🚪 قاعة ${c.room}${section}`;
-    }).join("\n\n");
-
-    parts.push(`📚 **محاضرات مرتبطة:**\n${courseLines}`);
-  }
-
-  if (parts.length === 0) {
+  if (matched.length === 0) {
     res.json({
-      reply: "ما وجدت معلومات عن هذا البحث. حاولي تكتبين رقم القاعة أو اسم المادة أو اسم الدكتورة بشكل أوضح 🔍"
+      reply: "ما وجدت معلومات عن هذه القاعة. جربي تكتبين رقمها أو اسمها بشكل أوضح 🔍"
     });
     return;
   }
 
-  res.json({ reply: parts.join("\n\n---\n\n") });
+  const reply = matched
+    .map(k => `📍 **${k.title}**\n${k.content}`)
+    .join("\n\n---\n\n");
+
+  res.json({ reply });
 });
 
 export default router;

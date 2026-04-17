@@ -18,7 +18,7 @@ const API_BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") + "/api";
 
 export function AssistantModal({ open, onClose }: AssistantModalProps) {
   const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", content: "أهلاً! أنا مساعدة دليل كليتي 🎓 كيف أقدر أساعدك؟ اسأليني عن القاعات أو المحاضرات أو أي شيء تحتاجينه 😊" }
+    { role: "assistant", content: "أهلاً! اكتبي رقم القاعة أو اسمها وسأخبرك وين هي 📍" }
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -120,7 +120,7 @@ export function AssistantModal({ open, onClose }: AssistantModalProps) {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter") send(); }}
-                placeholder="اكتبي سؤالك هنا..."
+                placeholder="اكتبي رقم القاعة أو اسمها..."
                 className="flex-1 rounded-full bg-muted border-0 focus-visible:ring-1 focus-visible:ring-green-500"
                 disabled={loading}
               />
