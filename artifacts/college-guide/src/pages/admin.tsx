@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Trash2, Save, CloudOff, CheckCircle2, RotateCcw, ShieldCheck, AlertTriangle, Download, Upload, FileSpreadsheet, Bot, Pencil } from "lucide-react";
 import { Link } from "wouter";
-import * as XLSX from "xlsx";
+import readXlsxFile from "read-excel-file";
 
 const COLLEGE_MAP: Record<string, string> = {
   "التطبيقية": "تطبيقيه", "تطبيقية": "تطبيقيه",
@@ -212,58 +212,51 @@ export default function Admin() {
     e.target.value = "";
   };
 
-  const importExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const importExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const data = new Uint8Array(ev.target?.result as ArrayBuffer);
-        const wb = XLSX.read(data, { type: "array" });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows: string[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" }) as string[][];
-
-        const imported: LocalCourse[] = [];
-        for (const row of rows) {
-          const college = String(row[0] ?? "").trim();
-          const instructor = String(row[1] ?? "").trim();
-          const name = String(row[2] ?? "").trim();
-          const section = String(row[3] ?? "").trim();
-          const day = String(row[4] ?? "").trim();
-          const timeRaw = String(row[5] ?? "").trim();
-          const room = String(row[6] ?? "").trim();
-          const roomDescription = String(row[7] ?? "").trim();
-          const officeLocation = String(row[8] ?? "").trim();
-
-          if (!name || !instructor || !college || college.includes("الكلي")) continue;
-
-          const { startTime, endTime } = convertExcelTime(timeRaw);
-
-          imported.push({
-            _tempId: Math.random().toString(36).substring(7),
-            name,
-            instructor,
-            college: normalizeCollege(college),
-            day: normalizeDay(day),
-            startTime,
-            endTime,
-            room,
-            roomDescription: roomDescription || undefined,
-            section: section || undefined,
-            officeLocation: officeLocation || undefined,
-          });
-        }
-
-        if (!imported.length) throw new Error("empty");
-        setLocalCourses(imported);
-        setUserHasEdited(true);
-        toast({ title: "✓ تم استيراد الإكسل", description: `تم تحميل ${imported.length} مادة من الجدول. اضغطي "حفظ الكل" لنشرها.` });
-      } catch {
-        toast({ title: "خطأ في قراءة الملف", description: "تأكدي أن الملف بصيغة xlsx وأن الأعمدة: الكلية، الدكتورة، المادة، الشعبة، اليوم، الوقت، القاعة.", variant: "destructive" });
-      }
-    };
-    reader.readAsArrayBuffer(file);
     e.target.value = "";
+    try {
+      const rows = await readXlsxFile(file);
+
+      const imported: LocalCourse[] = [];
+      for (const row of rows) {
+        const college = String(row[0] ?? "").trim();
+        const instructor = String(row[1] ?? "").trim();
+        const name = String(row[2] ?? "").trim();
+        const section = String(row[3] ?? "").trim();
+        const day = String(row[4] ?? "").trim();
+        const timeRaw = String(row[5] ?? "").trim();
+        const room = String(row[6] ?? "").trim();
+        const roomDescription = String(row[7] ?? "").trim();
+        const officeLocation = String(row[8] ?? "").trim();
+
+        if (!name || !instructor || !college || college.includes("الكلي")) continue;
+
+        const { startTime, endTime } = convertExcelTime(timeRaw);
+
+        imported.push({
+          _tempId: Math.random().toString(36).substring(7),
+          name,
+          instructor,
+          college: normalizeCollege(college),
+          day: normalizeDay(day),
+          startTime,
+          endTime,
+          room,
+          roomDescription: roomDescription || undefined,
+          section: section || undefined,
+          officeLocation: officeLocation || undefined,
+        });
+      }
+
+      if (!imported.length) throw new Error("empty");
+      setLocalCourses(imported);
+      setUserHasEdited(true);
+      toast({ title: "✓ تم استيراد الإكسل", description: `تم تحميل ${imported.length} مادة من الجدول. اضغطي "حفظ الكل" لنشرها.` });
+    } catch {
+      toast({ title: "خطأ في قراءة الملف", description: "تأكدي أن الملف بصيغة xlsx وأن الأعمدة: الكلية، الدكتورة، المادة، الشعبة، اليوم، الوقت، القاعة.", variant: "destructive" });
+    }
   };
 
   const addRow = (instructor = "") => {
