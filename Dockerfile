@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM node:20-alpine
 RUN corepack enable && corepack prepare pnpm@9 --activate
 WORKDIR /app
 
@@ -14,7 +14,7 @@ COPY artifacts/api-server/ ./artifacts/api-server/
 COPY artifacts/college-guide/ ./artifacts/college-guide/
 COPY scripts/ ./scripts/
 
-# ── تثبيت الـ dependencies (بدون lockfile لتجنب التعارضات) ──
+# ── تثبيت الـ dependencies ──
 RUN pnpm install --no-frozen-lockfile
 
 # ── بناء الـ TypeScript libs ──
@@ -29,22 +29,6 @@ RUN pnpm --filter @workspace/api-server run build
 
 # ── نسخ الـ frontend داخل الـ API ──
 RUN cp -r artifacts/college-guide/dist/public artifacts/api-server/dist/public
-
-# ════════════════════════════════
-FROM node:20-alpine AS runner
-RUN corepack enable && corepack prepare pnpm@9 --activate
-WORKDIR /app
-
-COPY --from=base /app/pnpm-workspace.yaml ./
-COPY --from=base /app/package.json ./
-COPY --from=base /app/lib/ ./lib/
-COPY --from=base /app/artifacts/api-server/package.json ./artifacts/api-server/package.json
-COPY --from=base /app/scripts/package.json ./scripts/package.json
-
-RUN pnpm install --no-frozen-lockfile --prod
-
-# نسخ الـ build فقط
-COPY --from=base /app/artifacts/api-server/dist/ ./artifacts/api-server/dist/
 
 ENV NODE_ENV=production
 ENV PORT=8080
