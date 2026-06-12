@@ -13,13 +13,15 @@
     "prettier": "^3.8.1",
     "typescript": "~5.9.2"
   },
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  },
   "pnpm": {
     "overrides": {
       "lodash": "4.18.0",
       "path-to-regexp": "8.4.0",
       "picomatch@2": "2.3.2",
-      "picomatch@4": "4.0.4",
-      "@esbuild-kit/core-utils>esbuild": "0.27.3"
+      "picomatch@4": "4.0.4"
     }
   }
 }

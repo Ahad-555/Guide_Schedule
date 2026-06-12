@@ -75,6 +75,6 @@
     "zod": "catalog:"
   },
   "dependencies": {
-    "read-excel-file": "^5.8.6"
+    "xlsx": "^0.18.5"
   }
 }
