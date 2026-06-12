@@ -14,7 +14,7 @@ COPY artifacts/api-server/ ./artifacts/api-server/
 COPY artifacts/college-guide/ ./artifacts/college-guide/
 
 # ── تثبيت الـ dependencies ──
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 # ── بناء الـ TypeScript libs ──
 RUN pnpm run typecheck:libs
@@ -40,7 +40,7 @@ COPY --from=base /app/package.json ./
 COPY --from=base /app/lib/ ./lib/
 COPY --from=base /app/artifacts/api-server/package.json ./artifacts/api-server/package.json
 
-RUN pnpm install --frozen-lockfile --prod
+RUN pnpm install --no-frozen-lockfile --prod
 
 # نسخ الـ build فقط
 COPY --from=base /app/artifacts/api-server/dist/ ./artifacts/api-server/dist/
