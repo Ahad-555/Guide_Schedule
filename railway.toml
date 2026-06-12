@@ -1,5 +1,6 @@
 [build]
 dockerfilePath = "Dockerfile"
+watchPatterns = ["/artifacts/api-server/**", "/lib/**", "/Dockerfile", "/pnpm-lock.yaml", "/pnpm-workspace.yaml", "/railway.toml"]
 
 [deploy]
 startCommand = "node --enable-source-maps artifacts/api-server/dist/index.mjs"
