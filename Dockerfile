@@ -3,7 +3,7 @@ RUN corepack enable && corepack prepare pnpm@9 --activate
 WORKDIR /app
 
 # ── نسخ ملفات الـ workspace ──
-COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY pnpm-workspace.yaml package.json ./
 COPY tsconfig.base.json tsconfig.json ./
 
 # ── نسخ المكتبات المشتركة ──
@@ -12,8 +12,9 @@ COPY lib/ ./lib/
 # ── نسخ الـ packages ──
 COPY artifacts/api-server/ ./artifacts/api-server/
 COPY artifacts/college-guide/ ./artifacts/college-guide/
+COPY scripts/ ./scripts/
 
-# ── تثبيت الـ dependencies ──
+# ── تثبيت الـ dependencies (بدون lockfile لتجنب التعارضات) ──
 RUN pnpm install --no-frozen-lockfile
 
 # ── بناء الـ TypeScript libs ──
@@ -35,10 +36,10 @@ RUN corepack enable && corepack prepare pnpm@9 --activate
 WORKDIR /app
 
 COPY --from=base /app/pnpm-workspace.yaml ./
-COPY --from=base /app/pnpm-lock.yaml ./
 COPY --from=base /app/package.json ./
 COPY --from=base /app/lib/ ./lib/
 COPY --from=base /app/artifacts/api-server/package.json ./artifacts/api-server/package.json
+COPY --from=base /app/scripts/package.json ./scripts/package.json
 
 RUN pnpm install --no-frozen-lockfile --prod
 
